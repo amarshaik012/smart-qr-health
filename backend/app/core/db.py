@@ -1,4 +1,3 @@
-# backend/app/core/db.py
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from .config import settings
@@ -17,7 +16,18 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # ------------------------------------
-# 🧠 Database Health Check
+# 🧩 Database Session Dependency
+# ------------------------------------
+def get_db():
+    """Yield database session for FastAPI dependency injection."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ------------------------------------
+# ❤️ Database Health Check
 # ------------------------------------
 def db_healthcheck():
     """Simple DB healthcheck for /health/db route."""
