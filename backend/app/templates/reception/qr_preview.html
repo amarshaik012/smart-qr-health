@@ -1,0 +1,58 @@
+{% extends "reception/base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8">
+  <h2 class="text-2xl font-semibold text-green-700 text-center mb-6">
+    QR Card Preview
+  </h2>
+
+  <!-- Preview + Print buttons -->
+  <div class="flex justify-center gap-3 mb-6 print:hidden">
+    <a href="/reception/dashboard"
+       class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+      ← Back to Dashboard
+    </a>
+    <button onclick="window.print()"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+      🖨️ Print QR Card
+    </button>
+    <a href="/static/qr/{{ qr_filename }}" download="{{ name | replace(' ','_') }}_qr.png"
+       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+      ⬇️ Download PNG
+    </a>
+  </div>
+
+  <!-- The card itself -->
+  <div class="flex justify-center">
+    <div id="card"
+         class="bg-white shadow-lg rounded-xl border border-green-300 flex flex-col items-center justify-center"
+         style="width: 86mm; height: 54mm; padding: 6mm;">
+      <div class="text-green-700 text-base font-semibold mb-2 text-center leading-tight">
+        {{ hospital_name or "Smart QR Health Hospital" }}
+      </div>
+
+      <img src="/static/qr/{{ qr_filename }}"
+           alt="QR Code"
+           style="width: 28mm; height: 28mm; margin-bottom: 6px;" />
+
+      <div class="text-gray-800 text-sm font-semibold text-center">
+        {{ name }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Print only the card, sized like a debit card (85.6mm × 54mm) */
+  @media print {
+    @page { size: auto; margin: 0; }
+    body * { visibility: hidden !important; }
+    #card, #card * { visibility: visible !important; }
+    #card {
+      position: absolute;
+      top: 0; left: 0;
+      /* optional: nudge away from the very corner if your printer clips */
+      margin: 5mm;
+    }
+  }
+</style>
+{% endblock %}

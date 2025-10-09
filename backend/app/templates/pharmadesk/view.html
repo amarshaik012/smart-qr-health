@@ -1,0 +1,71 @@
+{% extends "pharmadesk/base.html" %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-green-200">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-green-700 flex items-center gap-2">
+      💊 Prescription Details
+    </h2>
+    <a href="/pharmadesk/dashboard"
+       class="text-sm text-green-700 hover:underline font-medium flex items-center gap-1">
+       ← Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Patient Info -->
+  <div class="bg-green-50 p-4 rounded-xl border border-green-200 mb-6">
+    <h3 class="font-semibold text-green-800 mb-3">👤 Patient Information</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+      <p><span class="font-medium">Name:</span> {{ patient.name }}</p>
+      <p><span class="font-medium">UID:</span> {{ patient.patient_uid }}</p>
+      <p><span class="font-medium">Gender:</span> {{ patient.gender or '-' }}</p>
+      <p><span class="font-medium">Date of Birth:</span> {{ patient.dob or '-' }}</p>
+    </div>
+  </div>
+
+  {% if prescription %}
+  <!-- Prescription Card -->
+  <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 mb-6">
+    <h3 class="font-semibold text-blue-800 mb-3">🩺 Prescription Summary</h3>
+    <div class="space-y-2 text-gray-800">
+      <p><span class="font-medium">Diagnosis:</span> {{ prescription.Diagnosis }}</p>
+      <div>
+        <span class="font-medium">Prescription:</span>
+        <pre class="whitespace-pre-wrap bg-white border border-blue-100 rounded-lg p-3 mt-1 text-gray-800 text-sm leading-relaxed">
+{{ prescription.Prescription }}
+        </pre>
+      </div>
+      <p><span class="font-medium">Notes:</span> {{ prescription.Notes or '-' }}</p>
+      <p><span class="font-medium">Date:</span> {{ prescription.Timestamp[:10] }}</p>
+    </div>
+  </div>
+
+  <!-- Dispense Status -->
+  <div class="mt-6">
+    {% if dispensed_on %}
+      <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg text-center font-medium">
+        ✅ Already dispensed on <strong>{{ dispensed_on[:10] }}</strong> 
+        by <strong>{{ dispensed_by or 'PharmaDesk' }}</strong>.
+      </div>
+    {% else %}
+      <form action="/pharmadesk/dispense/{{ patient.patient_uid }}" method="post" 
+            onsubmit="return confirm('Confirm marking as dispensed?')"
+            class="flex justify-center">
+        <button
+          class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition">
+          ✅ Mark as Dispensed
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <!-- No Prescription Case -->
+  <div class="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg text-center font-medium">
+    ⚠️ No prescriptions found for this patient yet.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

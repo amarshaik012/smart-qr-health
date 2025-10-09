@@ -1,0 +1,55 @@
+{% extends "reception/base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6 mt-6">
+  <h2 class="text-2xl font-semibold mb-4 text-center text-green-700">Edit Patient Details</h2>
+
+  <form action="/reception/edit/{{ patient.id }}" method="post" class="space-y-4">
+    <div>
+      <label class="block font-medium mb-1">Full Name</label>
+      <input name="name" type="text" value="{{ patient.name }}" required class="border p-2 rounded w-full focus:ring focus:ring-green-200" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Phone</label>
+      <input name="phone" type="text" value="{{ patient.phone }}" readonly class="border p-2 rounded w-full bg-gray-100 text-gray-600" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Email</label>
+      <input name="email" type="email" value="{{ patient.email }}" class="border p-2 rounded w-full focus:ring focus:ring-green-200" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Gender</label>
+      <select name="gender" class="border p-2 rounded w-full focus:ring focus:ring-green-200">
+        <option {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+        <option {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+        <option {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">DOB</label>
+      <input id="dob" name="dob" type="text" value="{{ patient.dob }}" class="border p-2 rounded w-full focus:ring focus:ring-green-200" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Weight</label>
+      <input name="weight" type="text" value="{{ patient.weight }}" class="border p-2 rounded w-full focus:ring focus:ring-green-200" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Height</label>
+      <input name="height" type="text" value="{{ patient.height }}" class="border p-2 rounded w-full focus:ring focus:ring-green-200" />
+    </div>
+
+    <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">💾 Save Changes</button>
+  </form>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  flatpickr("#dob", { dateFormat: "Y-m-d", altInput: true, altFormat: "d M Y", maxDate: "today", allowInput: true });
+</script>
+{% endblock %}

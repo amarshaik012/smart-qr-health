@@ -1,0 +1,16 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic-settings==2.4.0
+SQLAlchemy==2.0.34
+psycopg2-binary==2.9.9
+redis==5.0.8
+python-multipart==0.0.9
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
+pytesseract==0.3.13
+rapidfuzz==3.9.7
+python-dotenv==1.0.1
+email-validator==2.1.0.post1
+qrcode[pil]
+jinja2==3.1.4
+shortuuid

@@ -1,0 +1,113 @@
+{% extends "reception/base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6 mt-6">
+  <h2 class="text-2xl font-semibold mb-4 text-center text-blue-700">Register New Patient</h2>
+  <div id="alert-container"></div>
+
+  <form id="patientForm" action="/reception/register" method="post" class="space-y-4">
+    <div>
+      <label class="block font-medium mb-1">Full Name</label>
+      <input name="name" type="text" required class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="John Doe" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Phone Number</label>
+      <div class="flex items-center space-x-2">
+        <input id="phoneInput" name="phone" type="text" required pattern="\d{10}" maxlength="10" class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="9876543210" />
+        <button type="button" id="sendOtpBtn" class="bg-blue-600 text-white text-sm px-2 py-1 rounded hover:bg-blue-700">Send OTP</button>
+        <button type="button" id="resendOtpBtn" class="bg-gray-500 text-white text-sm px-2 py-1 rounded hover:bg-gray-600 hidden">Resend</button>
+      </div>
+      <div id="otpField" class="hidden mt-2">
+        <input id="otpInput" name="otp" type="text" maxlength="6" class="border p-2 rounded w-1/2 focus:ring focus:ring-blue-200" placeholder="Enter OTP">
+        <button type="button" id="verifyOtpBtn" class="bg-green-600 text-white text-sm px-2 py-1 rounded hover:bg-green-700">Verify</button>
+      </div>
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Email</label>
+      <input name="email" type="email" required class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="example@gmail.com" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Gender</label>
+      <select name="gender" class="border p-2 rounded w-full focus:ring focus:ring-blue-200">
+        <option value="">Select Gender</option>
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Date of Birth</label>
+      <input id="dob" name="dob" type="text" class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="Select DOB" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Weight</label>
+      <input name="weight" type="text" class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="e.g., 70 kg" />
+    </div>
+
+    <div>
+      <label class="block font-medium mb-1">Height</label>
+      <input name="height" type="text" class="border p-2 rounded w-full focus:ring focus:ring-blue-200" placeholder="e.g., 5.8 ft" />
+    </div>
+
+    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+      ➕ Register Patient
+    </button>
+  </form>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+  flatpickr("#dob", { dateFormat: "Y-m-d", altInput: true, altFormat: "d M Y", maxDate: "today", allowInput: true });
+
+  function showAlert(message, color = "green") {
+    const container = document.getElementById("alert-container");
+    container.innerHTML = `<div class="bg-${color}-500 text-white text-center py-2 rounded mb-4 text-sm">${message}</div>`;
+    setTimeout(() => container.innerHTML = "", 4000);
+  }
+
+  const phoneInput = document.getElementById("phoneInput");
+  const sendBtn = document.getElementById("sendOtpBtn");
+  const resendBtn = document.getElementById("resendOtpBtn");
+  const otpField = document.getElementById("otpField");
+  const otpInput = document.getElementById("otpInput");
+  const verifyBtn = document.getElementById("verifyOtpBtn");
+
+  sendBtn.addEventListener("click", async () => {
+    const phone = phoneInput.value.trim();
+    if (!/^\d{10}$/.test(phone)) return showAlert("Enter valid 10-digit phone", "red");
+    const formData = new FormData(); formData.append("phone", phone);
+    const res = await fetch("/reception/send-otp", { method: "POST", body: formData });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert(data.message, "green");
+      sendBtn.classList.add("hidden");
+      resendBtn.classList.remove("hidden");
+      otpField.classList.remove("hidden");
+    } else showAlert(data.message, "red");
+  });
+
+  resendBtn.addEventListener("click", async () => {
+    const phone = phoneInput.value.trim();
+    const formData = new FormData(); formData.append("phone", phone);
+    const res = await fetch("/reception/send-otp", { method: "POST", body: formData });
+    const data = await res.json();
+    showAlert(data.message, res.ok ? "blue" : "red");
+  });
+
+  verifyBtn.addEventListener("click", async () => {
+    const phone = phoneInput.value.trim(), otp = otpInput.value.trim();
+    if (!otp) return showAlert("Enter OTP", "red");
+    const formData = new FormData(); formData.append("phone", phone); formData.append("otp", otp);
+    const res = await fetch("/reception/verify-otp", { method: "POST", body: formData });
+    const data = await res.json();
+    showAlert(data.message, res.ok ? "green" : "red");
+    if (res.ok) otpInput.disabled = true;
+  });
+</script>
+{% endblock %}

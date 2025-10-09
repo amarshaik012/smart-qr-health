@@ -1,0 +1,158 @@
+{% extends "doctor/base.html" %}
+{% block content %}
+<div class="relative">
+  <!-- 🔍 Floating Search Bar -->
+  <div
+    class="sticky top-0 z-20 bg-white shadow-md border border-gray-200 rounded-xl mb-6 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <h2 class="text-2xl font-semibold text-green-700 flex items-center gap-2">
+      🩺 Doctor Dashboard
+    </h2>
+    <div class="flex flex-wrap gap-3">
+      <input type="text" id="searchInput" placeholder="Search by name or phone..."
+        class="border border-green-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-green-400 outline-none bg-white" />
+      <select id="genderFilter"
+        class="border border-green-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-400 outline-none bg-white">
+        <option value="">All Genders</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 📊 Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div
+      class="bg-gradient-to-r from-blue-100 to-blue-200 shadow rounded-xl p-5 text-center border border-blue-300">
+      <p class="text-blue-800 font-medium text-sm">Total Patients</p>
+      <h2 class="text-4xl font-extrabold text-blue-700 mt-1">{{ total_patients }}</h2>
+    </div>
+
+    <div
+      class="bg-gradient-to-r from-green-100 to-green-200 shadow rounded-xl p-5 text-center border border-green-300">
+      <p class="text-green-800 font-medium text-sm">Patients Today</p>
+      <h2 class="text-4xl font-extrabold text-green-700 mt-1">{{ patients_today }}</h2>
+    </div>
+
+    <div
+      class="bg-gradient-to-r from-yellow-100 to-yellow-200 shadow rounded-xl p-5 text-center border border-yellow-300">
+      <p class="text-yellow-800 font-medium text-sm">Prescriptions Given</p>
+      <h2 class="text-4xl font-extrabold text-yellow-700 mt-1">{{ total_prescriptions }}</h2>
+    </div>
+
+    <div
+      class="bg-gradient-to-r from-purple-100 to-purple-200 shadow rounded-xl p-5 text-center border border-purple-300">
+      <p class="text-purple-800 font-medium text-sm">Visits This Week</p>
+      <h2 class="text-4xl font-extrabold text-purple-700 mt-1">{{ visits_this_week }}</h2>
+    </div>
+  </div>
+
+  <!-- 📈 Analytics Chart -->
+  <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+    <h3 class="text-xl font-semibold text-blue-700 mb-3">📊 Patient Visits - Last 7 Days</h3>
+
+    <!-- Injected JSON (no red warnings in editors) -->
+    <script id="chart-data" type="application/json">
+      {
+        "labels": {{ chart_labels | tojson | safe }},
+        "data": {{ chart_data | tojson | safe }}
+      }
+    </script>
+
+    <canvas id="patientChart" height="90"></canvas>
+  </div>
+
+  <!-- 📋 Patients Table -->
+  <div class="overflow-x-auto bg-white shadow rounded-xl border border-gray-200">
+    <table class="min-w-full text-sm text-gray-700" id="patientsTable">
+      <thead class="bg-green-100 text-green-900 text-left">
+        <tr>
+          <th class="p-3">Name</th>
+          <th class="p-3">Age</th>
+          <th class="p-3">Gender</th>
+          <th class="p-3">Phone</th>
+          <th class="p-3">Visits</th>
+          <th class="p-3">Last Visit</th>
+          <th class="p-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="patientBody">
+        {% for p in patients %}
+        <tr class="hover:bg-green-50 border-b border-gray-100 transition">
+          <td class="p-3 font-semibold text-green-600">{{ p.name }}</td>
+          <td class="p-3">{{ p.age or '-' }}</td>
+          <td class="p-3">
+            {% if p.gender == 'Male' %}
+            <span class="bg-blue-200 text-blue-900 px-2 py-1 rounded-full text-xs">Male</span>
+            {% elif p.gender == 'Female' %}
+            <span class="bg-pink-200 text-pink-900 px-2 py-1 rounded-full text-xs">Female</span>
+            {% else %} - {% endif %}
+          </td>
+          <td class="p-3">{{ p.phone }}</td>
+          <td class="p-3">{{ p.visit_count or 0 }}</td>
+          <td class="p-3">{{ p.last_visit or '-' }}</td>
+          <td class="p-3 text-right">
+            <a href="/doctor/prescribe/{{ p.patient_uid }}"
+              class="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition text-xs font-medium">
+              Prescribe
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 📊 Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const chartJSON = JSON.parse(document.getElementById("chart-data").textContent);
+  const chartLabels = chartJSON.labels;
+  const chartData = chartJSON.data;
+
+  const ctx = document.getElementById("patientChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: "Patients Seen",
+        data: chartData,
+        backgroundColor: [
+          "#86efac", "#93c5fd", "#a5b4fc",
+          "#fcd34d", "#fca5a5", "#fde68a", "#c4b5fd"
+        ],
+        borderColor: "#10b981",
+        borderWidth: 1,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // 🔍 Real-time table filter
+  const searchInput = document.getElementById("searchInput");
+  const genderFilter = document.getElementById("genderFilter");
+  const tableBody = document.getElementById("patientBody");
+
+  function filterTable() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const gender = genderFilter.value;
+    for (const row of tableBody.rows) {
+      const name = row.cells[0].textContent.toLowerCase();
+      const phone = row.cells[3].textContent.toLowerCase();
+      const genderText = row.cells[2].textContent.trim();
+      const matchesSearch = name.includes(searchTerm) || phone.includes(searchTerm);
+      const matchesGender = gender === "" || genderText.includes(gender);
+      row.style.display = matchesSearch && matchesGender ? "" : "none";
+    }
+  }
+
+  searchInput.addEventListener("input", filterTable);
+  genderFilter.addEventListener("change", filterTable);
+</script>
+{% endblock %}

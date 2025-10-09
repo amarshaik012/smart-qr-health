@@ -1,0 +1,40 @@
+{% extends "doctor/base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold text-blue-700 mb-2">
+    🩺 Patient History — {{ patient.name }}
+  </h2>
+  <p class="text-gray-600 mb-6">
+    ID: <strong>{{ patient.patient_uid }}</strong> |
+    Phone: <strong>{{ patient.phone }}</strong> |
+    Email: <strong>{{ patient.email }}</strong>
+  </p>
+
+  {% if prescriptions %}
+  <div class="space-y-4">
+    {% for p in prescriptions %}
+    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+      {% set ts = datetime.fromisoformat(p.Timestamp) %}
+      <p class="text-sm text-gray-500 mb-1">
+        🕒 {{ ts.strftime("%d %b %Y, %I:%M %p") }}
+      </p>
+      <p><strong>Diagnosis:</strong> {{ p.Diagnosis }}</p>
+      <p><strong>Prescription:</strong> {{ p.Prescription }}</p>
+      {% if p.Notes %}
+        <p><strong>Notes:</strong> {{ p.Notes }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-gray-600">No prescriptions found for this patient yet.</p>
+  {% endif %}
+
+  <div class="mt-6">
+    <a href="/doctor/dashboard"
+       class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+       ← Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

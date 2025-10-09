@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ patient.name }} — Smart QR Health</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-lg rounded-2xl w-full max-w-xl p-6">
+    <div class="mb-4">
+      <h1 class="text-2xl font-semibold text-blue-700">{{ patient.name }}</h1>
+      <p class="text-gray-600 text-sm">Patient ID: <span class="font-mono">{{ patient.patient_uid }}</span></p>
+    </div>
+
+    {% if status %}
+      <div class="mb-4 rounded-md bg-green-50 p-3 text-green-700 text-sm">
+        {{ status }}
+      </div>
+    {% endif %}
+    {% if error %}
+      <div class="mb-4 rounded-md bg-red-50 p-3 text-red-700 text-sm">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+      <div><span class="text-gray-500">Gender:</span> <span class="font-medium">{{ patient.gender or '-' }}</span></div>
+      <div><span class="text-gray-500">Phone:</span> <span class="font-medium">{{ patient.phone }}</span></div>
+      <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ patient.email }}</span></div>
+      <div><span class="text-gray-500">DOB:</span> <span class="font-medium">{{ patient.dob or '-' }}</span></div>
+      {% if patient.weight %}
+      <div><span class="text-gray-500">Weight:</span> <span class="font-medium">{{ patient.weight }}</span></div>
+      {% endif %}
+      {% if height %}
+      <div><span class="text-gray-500">Height:</span> <span class="font-medium">{{ height }}</span></div>
+      {% endif %}
+    </div>
+
+    {% if not verified %}
+      <!-- Not verified: show phone + OTP forms -->
+      <div class="space-y-4">
+        <div class="rounded-lg border border-gray-200 p-4">
+          <h2 class="font-medium text-gray-800 mb-2">Verify to view your medical history</h2>
+          <p class="text-gray-500 text-sm mb-3">Enter your registered mobile number to receive a one-time password (OTP). The OTP is valid for <strong>5 minutes</strong>.</p>
+
+          <form id="send-otp-form" class="space-y-3" onsubmit="sendOtp(event)">
+            <input type="hidden" name="patient_uid" value="{{ patient.patient_uid }}">
+            <label class="block text-sm text-gray-700">Mobile number</label>
+            <input id="phone" name="phone" required maxlength="10" pattern="\\d{10}"
+                   class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
+                   placeholder="10-digit mobile number">
+            <div class="flex items-center gap-2">
+              <button type="submit" class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md">Send OTP</button>
+              <button type="button" onclick="sendOtp(event, true)" class="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-md">Resend</button>
+            </div>
+            <p id="send-otp-msg" class="text-xs text-green-700 mt-1 hidden"></p>
+          </form>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 p-4">
+          <form id="verify-otp-form" method="post" action="/p/verify-otp" class="space-y-3">
+            <input type="hidden" name="patient_uid" value="{{ patient.patient_uid }}">
+            <label class="block text-sm text-gray-700">Enter OTP</label>
+            <div class="grid grid-cols-3 gap-3">
+              <input id="v_phone" name="phone" required maxlength="10" pattern="\\d{10}"
+                     class="border rounded-md px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
+                     placeholder="Mobile number">
+              <input id="otp" name="otp" required maxlength="6" pattern="\\d{6}"
+                     class="border rounded-md px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
+                     placeholder="6-digit OTP">
+              <button type="submit" class="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md">Verify</button>
+            </div>
+            <p class="text-xs text-gray-500">Didn’t get it? Use “Resend”.</p>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <!-- Verified: show prescriptions -->
+      <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-green-800 text-sm mb-4">
+        You are verified. Showing your recent diagnoses & prescriptions.
+      </div>
+
+      {% if prescriptions and prescriptions|length > 0 %}
+        <div class="space-y-3">
+          {% for item in prescriptions %}
+            <div class="border rounded-lg p-4">
+              <div class="text-xs text-gray-500 mb-1">{{ item.Date }}</div>
+              <div class="text-sm"><span class="font-medium text-gray-700">Diagnosis:</span> {{ item.Diagnosis or '-' }}</div>
+              <div class="text-sm mt-1"><span class="font-medium text-gray-700">Prescription:</span> {{ item.Prescription or '-' }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="rounded-lg border border-gray-200 p-4 text-sm text-gray-600">
+          No prescriptions found yet.
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <script>
+    async function sendOtp(e, isResend=false) {
+      e.preventDefault();
+      const form = document.getElementById('send-otp-form');
+      const phone = document.getElementById('phone').value.trim();
+      if (!/^\d{10}$/.test(phone)) {
+        showMsg('send-otp-msg', 'Please enter a valid 10-digit mobile number.', true);
+        return;
+      }
+      const data = new URLSearchParams(new FormData(form));
+      const res = await fetch('/p/send-otp', { method: 'POST', body: data });
+      const json = await res.json();
+      showMsg('send-otp-msg', json.message || (isResend ? 'OTP resent.' : 'OTP sent.'), !json.ok);
+      // Pre-fill verify form phone
+      document.getElementById('v_phone').value = phone;
+    }
+
+    function showMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.textContent = text;
+      el.className = 'text-xs mt-1 ' + (isError ? 'text-red-700' : 'text-green-700');
+    }
+  </script>
+</body>
+</html>

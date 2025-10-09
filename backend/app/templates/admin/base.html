@@ -1,0 +1,53 @@
+<!-- app/templates/admin/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title or "Smart QR Health | Admin Portal" }}</title>
+
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+    .nav-link {
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-gray-100 text-gray-800">
+  <!-- 🌿 Navbar -->
+  <nav class="bg-gradient-to-r from-green-600 to-emerald-500 text-white p-4 flex justify-between items-center shadow-md">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🏥</span>
+      <h1 class="text-lg md:text-xl font-semibold tracking-wide">
+        Smart QR Health - Admin Portal
+      </h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/admin/dashboard" class="nav-link {% if '/admin/dashboard' in request.url.path %}font-bold bg-white/20{% endif %}">Dashboard</a>
+      <a href="/admin/logout" class="nav-link">Logout</a>
+    </div>
+  </nav>
+
+  <!-- 📄 Main Content -->
+  <main class="container mx-auto flex-1 p-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- 🧩 Footer -->
+  <footer class="bg-green-600 text-white text-center py-2 text-sm shadow-inner">
+    © {{ datetime.utcnow().year }} Smart QR Health | Admin Portal
+  </footer>
+</body>
+</html>

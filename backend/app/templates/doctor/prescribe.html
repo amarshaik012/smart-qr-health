@@ -1,0 +1,46 @@
+{% extends "doctor/base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold mb-4 text-blue-700">🩺 Prescription for {{ patient.name }}</h2>
+  <p class="text-gray-600 mb-6">
+    Patient ID: <strong>{{ patient.patient_uid }}</strong> |
+    Phone: <strong>{{ patient.phone }}</strong>
+  </p>
+
+  {% if error %}
+    <p class="text-red-600 mb-4">{{ error }}</p>
+  {% endif %}
+
+  <form action="/doctor/prescribe/{{ patient.patient_uid }}" method="post" class="space-y-4">
+    <div>
+      <label class="block text-sm font-semibold mb-1">Diagnosis</label>
+      <textarea name="diagnosis" rows="3" required
+        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Prescription</label>
+      <textarea name="prescription" rows="4" required
+        placeholder="Enter medicines, dosages, instructions..."
+        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Additional Notes (Optional)</label>
+      <textarea name="notes" rows="2"
+        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+    </div>
+
+    <div class="flex justify-end gap-4 mt-6">
+      <a href="/doctor/dashboard"
+         class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">
+        Cancel
+      </a>
+      <button type="submit"
+         class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+        Save Prescription
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
