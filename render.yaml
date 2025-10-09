@@ -4,9 +4,9 @@ services:
     env: docker
     plan: free
     region: singapore
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: BASE_URL
+      - key: PUBLIC_BASE_URL
         value: https://smart-qr-health.onrender.com

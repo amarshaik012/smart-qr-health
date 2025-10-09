@@ -1,30 +1,32 @@
-# ===========================================
-# 🐍 FASTAPI + Uvicorn Dockerfile for Render
-# ===========================================
+# -------- Base image --------
+    FROM python:3.11-slim AS base
 
-FROM python:3.11-slim
-
-# Prevent Python from buffering stdout/stderr
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set workdir
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gcc libpq-dev curl \
-  && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install dependencies
-COPY backend/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy backend source code
-COPY backend ./app
-
-# Expose the FastAPI port
-EXPOSE 8000
-
-# Run FastAPI with Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    # Prevent Python cache & buffering
+    ENV PYTHONDONTWRITEBYTECODE=1
+    ENV PYTHONUNBUFFERED=1
+    
+    WORKDIR /app
+    
+    # Install system deps for tesseract + build essentials
+    RUN apt-get update && apt-get install -y --no-install-recommends \
+        tesseract-ocr \
+        libtesseract-dev \
+        libleptonica-dev \
+        build-essential \
+        libpq-dev \
+     && rm -rf /var/lib/apt/lists/*
+    
+    # -------- Install Python deps --------
+    COPY backend/requirements.txt .
+    RUN pip install --no-cache-dir -r requirements.txt
+    
+    # -------- Copy app code --------
+    COPY backend/app ./app
+    
+    # Create dirs for static/data and set perms
+    RUN mkdir -p /app/app/static/qr /app/app/static/data && chmod -R 777 /app/app/static
+    
+    EXPOSE 8000
+    
+    # -------- Run FastAPI --------
+    CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
