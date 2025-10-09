@@ -1,40 +1,13 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from .config import settings
+import os
 
+# ✅ Use SQLite file inside static folder
+DB_PATH = os.path.join(os.path.dirname(__file__), "../static/data/patients.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# ✅ Use psycopg2 driver for PostgreSQL
-DATABASE_URL = settings.DATABASE_URL.replace("psycopg", "psycopg2")
-
-# ✅ SQLAlchemy engine with safe defaults
 engine = create_engine(
-    DATABASE_URL,
-    echo=False,          # set True only for debugging SQL
-    pool_pre_ping=True,  # auto-checks connections automatically
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
-
-# ✅ Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# ✅ Declarative base class
 Base = declarative_base()
-
-
-# ✅ Dependency for FastAPI routes
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# ✅ Healthcheck function for database connectivity
-def db_healthcheck():
-    """Quick DB connection check."""
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return True, None
-    except Exception as e:
-        return False, str(e)

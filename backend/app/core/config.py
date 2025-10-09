@@ -1,17 +1,22 @@
 import os
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Smart QR Health API")
 
-    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "db")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "app")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "strongpass")
-    DATABASE_URL: str = (
-        f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:5432/{POSTGRES_DB}"
+    # ✅ Use SQLite by default (works both locally & on Render)
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DB_PATH = os.path.join(BASE_DIR, "static", "data", "patients.db")
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", f"sqlite:///{DB_PATH}"
     )
 
-    PUBLIC_BASE_URL: str = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+    # ✅ Public URL for QR codes
+    PUBLIC_BASE_URL: str = os.getenv(
+        "PUBLIC_BASE_URL", "https://smart-qr-health.onrender.com"
+    )
 
+
+# Initialize settings
 settings = Settings()
