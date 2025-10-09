@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: smart-qr-health
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: backend/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: BASE_URL
+        value: https://smart-qr-health.onrender.com
