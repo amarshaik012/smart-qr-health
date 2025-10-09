@@ -4,4 +4,4 @@
 ```bash
 cd deploy
 docker compose up --build -d
-docker compose logs -f api
+docker compose logs -f api# smart-qr-health
