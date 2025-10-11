@@ -6,49 +6,65 @@
   <title>{{ patient.name }} | Smart QR Health</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-100 flex flex-col items-center p-6">
-  <div class="bg-white/90 backdrop-blur-sm w-full max-w-3xl rounded-3xl shadow-2xl p-8">
-    <div class="text-center mb-6">
-      <h1 class="text-3xl font-bold text-blue-700">🏥 Smart QR Health</h1>
-      <p class="text-sm text-gray-500">Patient Dashboard</p>
-    </div>
 
-    <div class="grid md:grid-cols-2 gap-4 mb-6 text-sm text-gray-700">
-      <div class="bg-blue-50 rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-blue-700 mb-2">👤 Personal Info</h2>
+<body class="min-h-screen bg-gradient-to-br from-blue-100 via-white to-green-100 flex flex-col items-center p-6">
+
+  <!-- Header -->
+  <header class="text-center mb-6">
+    <h1 class="text-4xl font-extrabold text-blue-700 tracking-tight">🏥 Smart QR Health</h1>
+    <p class="text-gray-500 text-sm">Patient Health Overview</p>
+  </header>
+
+  <!-- Patient Card -->
+  <section class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl w-full max-w-3xl p-8 border border-blue-100">
+    <div class="grid md:grid-cols-2 gap-5 text-gray-700 text-sm">
+      <!-- Personal Info -->
+      <div class="bg-blue-50/60 rounded-xl p-5 shadow-sm">
+        <h2 class="text-lg font-semibold text-blue-700 mb-3">👤 Personal Information</h2>
         <p><strong>Name:</strong> {{ patient.name }}</p>
         <p><strong>Gender:</strong> {{ patient.gender or '-' }}</p>
         <p><strong>DOB:</strong> {{ patient.dob or '-' }}</p>
         <p><strong>Phone:</strong> {{ patient.phone }}</p>
+        <p><strong>Email:</strong> {{ patient.email or '-' }}</p>
       </div>
 
-      <div class="bg-green-50 rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-green-700 mb-2">📏 Vitals</h2>
+      <!-- Vitals -->
+      <div class="bg-green-50/60 rounded-xl p-5 shadow-sm">
+        <h2 class="text-lg font-semibold text-green-700 mb-3">📊 Vitals</h2>
         <p><strong>Height:</strong> {{ height or '-' }}</p>
         <p><strong>Weight:</strong> {{ patient.weight or '-' }}</p>
       </div>
     </div>
 
-    <div class="bg-gray-50 rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-3">💊 Recent Prescriptions</h2>
+    <!-- Divider -->
+    <div class="my-6 border-t border-gray-200"></div>
+
+    <!-- Prescription History -->
+    <div class="bg-gray-50 rounded-xl p-5 shadow-inner">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">💊 Prescription History</h2>
       {% if prescriptions and prescriptions|length > 0 %}
         <div class="space-y-3">
           {% for p in prescriptions %}
-            <div class="border border-gray-200 rounded-xl p-4 hover:bg-white transition shadow-sm">
-              <div class="text-xs text-gray-500">{{ p.Date }}</div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition duration-300">
+              <div class="flex justify-between items-center mb-1">
+                <div class="text-xs text-gray-400">{{ p.Date }}</div>
+                <div class="text-blue-600 text-xs font-semibold uppercase tracking-wide">Doctor Visit</div>
+              </div>
               <div class="text-sm"><strong>Diagnosis:</strong> {{ p.Diagnosis }}</div>
               <div class="text-sm mt-1"><strong>Prescription:</strong> {{ p.Prescription }}</div>
             </div>
           {% endfor %}
         </div>
       {% else %}
-        <p class="text-gray-500 text-sm italic">No prescriptions found.</p>
+        <p class="text-gray-500 text-sm italic text-center">No prescriptions found yet.</p>
       {% endif %}
     </div>
-  </div>
+  </section>
 
-  <footer class="text-center text-gray-400 text-xs mt-6">
-    © Smart QR Health — Secure Digital Care Access
+  <!-- Footer -->
+  <footer class="text-center text-gray-400 text-xs mt-8">
+    © 2025 Smart QR Health — Secure Digital Access to Care
   </footer>
+
 </body>
 </html>

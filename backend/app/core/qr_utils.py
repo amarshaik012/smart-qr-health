@@ -2,8 +2,10 @@ import qrcode
 import re
 import os
 import socket
+from io import BytesIO
 from pathlib import Path
 import csv
+from fastapi.responses import StreamingResponse
 
 # ===================================================
 # 🧩 Detect Local IP or Use BASE_URL from Environment
@@ -19,8 +21,9 @@ def get_local_ip() -> str:
     except Exception:
         return "localhost"
 
+
 # --------------------------
-# 📁 Directories for Storage
+# 📁 Directories for Storage (Local Only)
 # --------------------------
 QR_DIR = Path("/app/app/static/qr")
 QR_DIR.mkdir(parents=True, exist_ok=True)
@@ -49,12 +52,26 @@ def normalize_height(height: str | None) -> str:
 
 
 # ===================================================
-# 🧾 QR Generator
+# 🧾 QR Generator (Smart Mode)
 # ===================================================
-def generate_qr_image(uid: str, qr_path: str):
-    """Generate a scannable QR Code with the BASE_URL/p/{uid} link."""
+def generate_qr_image(uid: str, qr_path: str = None):
+    """
+    Generate a scannable QR Code with BASE_URL/p/{uid}.
+    If qr_path is provided → save locally (for dev)
+    Otherwise → return StreamingResponse (for Render)
+    """
     qr_content = f"{BASE_URL}/p/{uid}"
     img = qrcode.make(qr_content)
+
+    # In Render (no disk write) → return stream
+    if os.getenv("RENDER") or not qr_path:
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        print(f"[QR GENERATED STREAM] {qr_content}")
+        return StreamingResponse(buf, media_type="image/png")
+
+    # Local → save PNG file
     img.save(qr_path)
     print(f"[QR GENERATED] {qr_content} → saved at {qr_path}")
     return qr_path
@@ -80,7 +97,7 @@ def append_to_csv(data: dict):
 
     # Convert qr_filename → qr_url if needed
     if "qr_filename" in data and "qr_url" not in data:
-        data["qr_url"] = f"/static/qr/{data['qr_filename']}"
+        data["qr_url"] = f"/qr/{data['qr_filename'].replace('.png', '')}"
 
     # ✅ Auto-repair bad CSV header
     valid_rows = []

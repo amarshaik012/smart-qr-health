@@ -1,4 +1,3 @@
-# backend/app/main.py
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,7 +12,7 @@ from .core.db import Base, engine, SessionLocal, db_healthcheck
 from .models.patient import Patient
 
 # Routers
-from .routers import admin, reception, doctor, patients, pharmadesk, verify
+from .routers import admin, reception, doctor, patients, pharmadesk, verify, qr
 
 
 # ----------------------------------------
@@ -21,17 +20,16 @@ from .routers import admin, reception, doctor, patients, pharmadesk, verify
 # ----------------------------------------
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="0.3.21",
+    version="0.4.0",
     description="Smart QR Health – Unified Patient & Prescription Portal",
 )
 
 # Ensure static + templates directories exist
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-
 os.makedirs(static_dir, exist_ok=True)
 
-# Static & templates
+# Static & templates setup
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 templates.env.globals.update({"datetime": datetime})
@@ -42,7 +40,7 @@ templates.env.globals.update({"datetime": datetime})
 # ----------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # in production, restrict this
+    allow_origins=["*"],  # for production, restrict later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,9 +54,9 @@ app.add_middleware(
 def on_startup():
     try:
         Base.metadata.create_all(bind=engine)
-        print("✅ Database ready and initialized.")
+        print("✅ Database initialized.")
     except Exception as e:
-        print(f"⚠️ Database init skipped: {e}")
+        print(f"⚠️ DB initialization skipped: {e}")
 
 
 # ----------------------------------------
@@ -67,7 +65,11 @@ def on_startup():
 @app.get("/health", tags=["Health"])
 def health():
     """Basic service health endpoint"""
-    return {"status": "ok", "service": settings.PROJECT_NAME, "version": "0.3.21"}
+    return {
+        "status": "ok",
+        "service": settings.PROJECT_NAME,
+        "version": "0.4.0",
+    }
 
 
 @app.get("/health/db", tags=["Health"])
@@ -87,6 +89,7 @@ def root():
 
 @app.get("/portal", response_class=HTMLResponse, include_in_schema=False)
 def choose_portal(request: Request):
+    """Landing page for selecting hospital portal"""
     return templates.TemplateResponse(
         "base.html",
         {
@@ -98,25 +101,30 @@ def choose_portal(request: Request):
 
 
 # ----------------------------------------
-# 🧾 Public Patient Page
+# 🧾 Public Patient Page (Dynamic QR version)
 # ----------------------------------------
 @app.get("/p/{patient_uid}", response_class=HTMLResponse)
-def resolve_patient(request: Request, patient_uid: str):
-    """Public route for viewing patient details by QR UID"""
+def public_patient_card(request: Request, patient_uid: str):
+    """Public route to show patient details after scanning QR"""
     with SessionLocal() as db:
         patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
+        # Normalize height
+        height = None
         if patient.height:
-            patient.height = re.sub(
-                r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE
-            )
+            height = re.sub(r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE)
 
-        qr_url = f"/static/qr/{patient.qr_filename}"
         return templates.TemplateResponse(
-            "patient.html",
-            {"request": request, "patient": patient, "qr_url": qr_url},
+            "patient_details.html",
+            {
+                "request": request,
+                "patient": patient,
+                "height": height,
+                "prescriptions": [],  # prescriptions handled in patients.py
+                "verified": True,
+            },
         )
 
 
@@ -129,3 +137,4 @@ app.include_router(doctor.router)
 app.include_router(patients.router)
 app.include_router(pharmadesk.router)
 app.include_router(verify.router)
+app.include_router(qr.router)
