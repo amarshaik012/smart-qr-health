@@ -12,7 +12,7 @@ from .core.db import Base, engine, SessionLocal, db_healthcheck
 from .models.patient import Patient
 
 # Routers
-from .routers import admin, reception, doctor, patients, pharmadesk, verify, qr
+from .routers import admin, reception, doctor, patients, pharmadesk, verify
 
 
 # ----------------------------------------
@@ -20,7 +20,7 @@ from .routers import admin, reception, doctor, patients, pharmadesk, verify, qr
 # ----------------------------------------
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="0.4.0",
+    version="0.3.22",
     description="Smart QR Health – Unified Patient & Prescription Portal",
 )
 
@@ -40,7 +40,7 @@ templates.env.globals.update({"datetime": datetime})
 # ----------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for production, restrict later
+    allow_origins=["*"],  # TODO: Restrict this in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,9 +54,9 @@ app.add_middleware(
 def on_startup():
     try:
         Base.metadata.create_all(bind=engine)
-        print("✅ Database initialized.")
+        print("✅ Database ready and initialized.")
     except Exception as e:
-        print(f"⚠️ DB initialization skipped: {e}")
+        print(f"⚠️ Database init skipped: {e}")
 
 
 # ----------------------------------------
@@ -65,11 +65,7 @@ def on_startup():
 @app.get("/health", tags=["Health"])
 def health():
     """Basic service health endpoint"""
-    return {
-        "status": "ok",
-        "service": settings.PROJECT_NAME,
-        "version": "0.4.0",
-    }
+    return {"status": "ok", "service": settings.PROJECT_NAME, "version": "0.3.22"}
 
 
 @app.get("/health/db", tags=["Health"])
@@ -89,7 +85,6 @@ def root():
 
 @app.get("/portal", response_class=HTMLResponse, include_in_schema=False)
 def choose_portal(request: Request):
-    """Landing page for selecting hospital portal"""
     return templates.TemplateResponse(
         "base.html",
         {
@@ -101,29 +96,31 @@ def choose_portal(request: Request):
 
 
 # ----------------------------------------
-# 🧾 Public Patient Page (Dynamic QR version)
+# 🧾 Public Patient Page (Updated)
 # ----------------------------------------
 @app.get("/p/{patient_uid}", response_class=HTMLResponse)
-def public_patient_card(request: Request, patient_uid: str):
-    """Public route to show patient details after scanning QR"""
+def resolve_patient(request: Request, patient_uid: str):
+    """Public route for viewing patient details via QR UID"""
     with SessionLocal() as db:
         patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
         # Normalize height
-        height = None
         if patient.height:
-            height = re.sub(r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE)
+            patient.height = re.sub(
+                r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE
+            )
+
+        qr_url = f"/static/qr/{patient.qr_filename}"
 
         return templates.TemplateResponse(
             "patient_details.html",
             {
                 "request": request,
                 "patient": patient,
-                "height": height,
-                "prescriptions": [],  # prescriptions handled in patients.py
-                "verified": True,
+                "qr_url": qr_url,
+                "height": patient.height,
             },
         )
 
@@ -137,4 +134,3 @@ app.include_router(doctor.router)
 app.include_router(patients.router)
 app.include_router(pharmadesk.router)
 app.include_router(verify.router)
-app.include_router(qr.router)
