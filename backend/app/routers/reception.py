@@ -178,28 +178,26 @@ def register_patient(
         "timestamp": datetime.utcnow().isoformat(),
     })
 
-    # Redirect to QR Preview after registration
     return RedirectResponse(url=f"/reception/qr-preview/{uid}", status_code=HTTP_302_FOUND)
 
 
 # -------------------------------
-# 🪪 QR Preview / Print Page
+# 🪪 QR Preview / Print Page (Fixed)
 # -------------------------------
-@router.get("/qr-preview/{patient_uid}", response_class=HTMLResponse)
-def qr_preview(request: Request, patient_uid: str, db: Session = Depends(get_db)):
-    """Show the printable QR card preview for a newly-registered patient."""
-    patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
+@router.get("/qr-preview/{uid}", response_class=HTMLResponse)
+def qr_preview(request: Request, uid: str, db: Session = Depends(get_db)):
+    """Show the printable QR Card for a patient."""
+    patient = db.query(Patient).filter(Patient.patient_uid == uid).first()
     if not patient:
-        return HTMLResponse("Patient not found", status_code=404)
+        raise HTTPException(status_code=404, detail="Patient not found")
 
     return templates.TemplateResponse(
         "reception/qr_preview.html",
         {
             "request": request,
+            "patient_uid": patient.patient_uid,
             "name": patient.name,
-            "phone": patient.phone,
-            "qr_filename": patient.qr_filename,
-            "hospital_name": "Smart QR Health Hospital",
+            "hospital_name": "Smart QR Health Hospital"
         },
     )
 
