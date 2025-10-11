@@ -5,30 +5,33 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime
-import os, re
+import os
+import re
 
 from .core.config import settings
 from .core.db import Base, engine, SessionLocal, db_healthcheck
 from .models.patient import Patient
-from .core.qr_utils import generate_qr_image  # ✅ dynamic QR generator
+from .core.qr_utils import generate_qr_image  # ✅ QR generator import
 
 # Routers
 from .routers import admin, reception, doctor, patients, pharmadesk, verify
 
-# -----------------------------------------------------
+
+# -------------------------------------------------------
 # ⚙️ Initialize FastAPI
-# -----------------------------------------------------
+# -------------------------------------------------------
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="0.3.23",
+    version="0.3.24",
     description="Smart QR Health – Unified Patient & Prescription Portal",
 )
 
-# -----------------------------------------------------
-# 📁 Static / Templates setup
-# -----------------------------------------------------
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+# -------------------------------------------------------
+# 🗂️ Static + Templates setup
+# -------------------------------------------------------
+BASE_DIR = os.path.dirname(__file__)
+static_dir = os.path.join(BASE_DIR, "static")
+templates_dir = os.path.join(BASE_DIR, "templates")
 
 os.makedirs(static_dir, exist_ok=True)
 
@@ -36,20 +39,22 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 templates.env.globals.update({"datetime": datetime})
 
-# -----------------------------------------------------
-# 🌐 CORS
-# -----------------------------------------------------
+
+# -------------------------------------------------------
+# 🌐 CORS (for cross-domain portals)
+# -------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ⚠️ restrict later for prod
+    allow_origins=["*"],  # ✅ relax for dev, tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------------------------------
-# 🏁 Startup
-# -----------------------------------------------------
+
+# -------------------------------------------------------
+# 🏁 Startup Event
+# -------------------------------------------------------
 @app.on_event("startup")
 def on_startup():
     try:
@@ -58,12 +63,13 @@ def on_startup():
     except Exception as e:
         print(f"⚠️ Database init skipped: {e}")
 
-# -----------------------------------------------------
-# ❤️ Health routes
-# -----------------------------------------------------
+
+# -------------------------------------------------------
+# ❤️ Health Endpoints
+# -------------------------------------------------------
 @app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok", "service": settings.PROJECT_NAME, "version": "0.3.23"}
+    return {"status": "ok", "service": settings.PROJECT_NAME, "version": "0.3.24"}
 
 
 @app.get("/health/db", tags=["Health"])
@@ -71,14 +77,15 @@ def health_db():
     ok, error = db_healthcheck()
     return {"database": "ok" if ok else "error", "error": error}
 
-# -----------------------------------------------------
-# 🧾 Dynamic QR Route (for Render)
-# -----------------------------------------------------
-@app.get("/qr/{uid}", response_class=StreamingResponse)
+
+# -------------------------------------------------------
+# 🧾 Dynamic QR Generator (for Render)
+# -------------------------------------------------------
+@app.get("/qr/{uid}")
 def serve_qr(uid: str):
     """
-    Generates and streams the QR live from BASE_URL.
-    This avoids 404s from missing static files on Render.
+    Dynamically generate and stream QR image as PNG.
+    Works both locally and on Render (no static writes).
     """
     try:
         return generate_qr_image(uid)
@@ -86,9 +93,10 @@ def serve_qr(uid: str):
         print(f"[QR ERROR] {e}")
         raise HTTPException(status_code=404, detail="QR not found")
 
-# -----------------------------------------------------
-# 🧭 Root + Portal
-# -----------------------------------------------------
+
+# -------------------------------------------------------
+# 🧭 Root and Portal Routes
+# -------------------------------------------------------
 @app.get("/", include_in_schema=False)
 def root():
     return RedirectResponse(url="/portal", status_code=307)
@@ -98,12 +106,17 @@ def root():
 def choose_portal(request: Request):
     return templates.TemplateResponse(
         "base.html",
-        {"request": request, "title": "Smart QR Health Portal", "show_portal_selection": True},
+        {
+            "request": request,
+            "title": "Smart QR Health Portal",
+            "show_portal_selection": True,
+        },
     )
 
-# -----------------------------------------------------
+
+# -------------------------------------------------------
 # 🧬 Public Patient Details Page
-# -----------------------------------------------------
+# -------------------------------------------------------
 @app.get("/p/{patient_uid}", response_class=HTMLResponse)
 def resolve_patient(request: Request, patient_uid: str):
     with SessionLocal() as db:
@@ -112,17 +125,20 @@ def resolve_patient(request: Request, patient_uid: str):
             raise HTTPException(status_code=404, detail="Patient not found")
 
         if patient.height:
-            patient.height = re.sub(r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE)
+            patient.height = re.sub(
+                r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE
+            )
 
-        qr_url = f"/qr/{patient.patient_uid}"  # ✅ dynamic QR endpoint
+        qr_url = f"/qr/{patient.patient_uid}"
         return templates.TemplateResponse(
             "patient_details.html",
             {"request": request, "patient": patient, "qr_url": qr_url},
         )
 
-# -----------------------------------------------------
+
+# -------------------------------------------------------
 # 🔗 Routers
-# -----------------------------------------------------
+# -------------------------------------------------------
 app.include_router(admin.router)
 app.include_router(reception.router)
 app.include_router(doctor.router)
