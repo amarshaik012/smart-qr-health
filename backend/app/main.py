@@ -13,7 +13,7 @@ from .core.db import Base, engine, SessionLocal, db_healthcheck
 from .models.patient import Patient
 
 # Routers
-from .routers import admin, reception, doctor, patients, pharmadesk
+from .routers import admin, reception, doctor, patients, pharmadesk, verify
 
 
 # ----------------------------------------
@@ -128,3 +128,4 @@ app.include_router(reception.router)
 app.include_router(doctor.router)
 app.include_router(patients.router)
 app.include_router(pharmadesk.router)
+app.include_router(verify.router)

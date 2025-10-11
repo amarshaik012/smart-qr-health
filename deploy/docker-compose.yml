@@ -1,58 +1,30 @@
-version: "3.9"
-
 services:
-  # -----------------------------------------
-  # PostgreSQL Database
-  # -----------------------------------------
-  db:
-    image: postgres:16
-    container_name: deploy-db-1
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app
+  api:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: deploy-api
+    ports:
+      - "8000:8000"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ../backend/app/static:/app/app/static
+    environment:
+      - BASE_URL=http://localhost:8000
+    networks:
+      - app_net
+
+  db:
+    image: postgres:14
+    container_name: deploy-db
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: strongpass
     ports:
       - "5432:5432"
     networks:
       - app_net
-    restart: always
 
-  # -----------------------------------------
-  # FastAPI Backend Service
-  # -----------------------------------------
-  api:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    container_name: deploy-api-1
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/app
-      PYTHONPATH: /app
-
-      # ✅ This BASE_URL ensures QR codes open on your phone/laptop via Wi-Fi
-      BASE_URL: http://192.168.0.173:8000
-    ports:
-      - "8000:8000"
-    volumes:
-      - ../backend/app/static/qr:/app/app/static/qr
-      - ../backend/app/static/data:/app/app/static/data
-    networks:
-      - app_net
-    restart: always
-
-# -----------------------------------------
-# Persistent Volumes
-# -----------------------------------------
-volumes:
-  db_data:
-
-# -----------------------------------------
-# Docker Network
-# -----------------------------------------
 networks:
   app_net:
     driver: bridge
