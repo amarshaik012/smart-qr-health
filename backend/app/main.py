@@ -10,10 +10,10 @@ import os, re
 from .core.config import settings
 from .core.db import Base, engine, SessionLocal, db_healthcheck
 from .models.patient import Patient
+from .core.qr_utils import generate_qr_image  # ✅ Import for dynamic QR
 
 # Routers
 from .routers import admin, reception, doctor, patients, pharmadesk, verify
-
 
 # ----------------------------------------
 # ⚙️ Initialize FastAPI
@@ -29,23 +29,21 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 os.makedirs(static_dir, exist_ok=True)
 
-# Static & templates setup
+# Static & templates
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 templates.env.globals.update({"datetime": datetime})
-
 
 # ----------------------------------------
 # 🌐 CORS Middleware
 # ----------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict this in production
+    allow_origins=["*"],  # restrict later for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # ----------------------------------------
 # 🏁 Startup Event
@@ -58,22 +56,25 @@ def on_startup():
     except Exception as e:
         print(f"⚠️ Database init skipped: {e}")
 
-
 # ----------------------------------------
-# ❤️ Health Check Endpoints
+# ❤️ Health Endpoints
 # ----------------------------------------
 @app.get("/health", tags=["Health"])
 def health():
-    """Basic service health endpoint"""
     return {"status": "ok", "service": settings.PROJECT_NAME, "version": "0.3.22"}
-
 
 @app.get("/health/db", tags=["Health"])
 def health_db():
-    """Database connection test"""
     ok, error = db_healthcheck()
     return {"database": "ok" if ok else "error", "error": error}
 
+# ----------------------------------------
+# 🧩 Dynamic QR Generator (No static file)
+# ----------------------------------------
+@app.get("/qr/{uid}")
+def serve_qr(uid: str):
+    """Dynamically generate QR for live Render usage"""
+    return generate_qr_image(uid)
 
 # ----------------------------------------
 # 🧭 Root Routes
@@ -82,51 +83,34 @@ def health_db():
 def root():
     return RedirectResponse(url="/portal", status_code=307)
 
-
 @app.get("/portal", response_class=HTMLResponse, include_in_schema=False)
 def choose_portal(request: Request):
     return templates.TemplateResponse(
         "base.html",
-        {
-            "request": request,
-            "title": "Smart QR Health Portal",
-            "show_portal_selection": True,
-        },
+        {"request": request, "title": "Smart QR Health Portal", "show_portal_selection": True},
     )
 
-
 # ----------------------------------------
-# 🧾 Public Patient Page (Updated)
+# 🧾 Public Patient Page
 # ----------------------------------------
 @app.get("/p/{patient_uid}", response_class=HTMLResponse)
 def resolve_patient(request: Request, patient_uid: str):
-    """Public route for viewing patient details via QR UID"""
     with SessionLocal() as db:
         patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        # Normalize height
         if patient.height:
-            patient.height = re.sub(
-                r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE
-            )
+            patient.height = re.sub(r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE)
 
-        qr_url = f"/static/qr/{patient.qr_filename}"
-
+        qr_url = f"/qr/{patient.patient_uid}"  # ✅ Dynamic QR route
         return templates.TemplateResponse(
             "patient_details.html",
-            {
-                "request": request,
-                "patient": patient,
-                "qr_url": qr_url,
-                "height": patient.height,
-            },
+            {"request": request, "patient": patient, "qr_url": qr_url},
         )
 
-
 # ----------------------------------------
-# 🔗 Include Routers
+# 🔗 Routers
 # ----------------------------------------
 app.include_router(admin.router)
 app.include_router(reception.router)

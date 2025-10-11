@@ -73,10 +73,13 @@
               {% endif %}
             </td>
             <td class="p-3">{{ p.dob or '-' }}</td>
+
+            <!-- ✅ Fixed: View QR (Now opens secure card preview) -->
             <td class="p-3 text-center">
-              <a href="/p/{{ p.patient_uid }}" target="_blank"
-                 class="text-green-600 hover:text-green-800 underline text-sm">View</a>
+              <a href="/reception/qr-preview/{{ p.patient_uid }}" target="_blank"
+                 class="text-green-600 hover:text-green-800 underline text-sm">View QR</a>
             </td>
+
             <td class="p-3 text-right">
               <a href="/reception/edit/{{ p.id }}"
                  class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg transition text-xs font-medium">Edit</a>

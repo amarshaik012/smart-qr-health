@@ -5,12 +5,6 @@
     Patient QR Card Preview
   </h2>
 
-  <!-- ⚠️ Info Banner -->
-  <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 px-4 py-3 mb-6 rounded-md text-sm text-center">
-    ⚠️ Note: QR codes are temporary on Render — if it shows blank or missing, please re-register the patient.
-  </div>
-
-  <!-- Action Buttons -->
   <div class="flex justify-center flex-wrap gap-4 mb-8 print:hidden">
     <a href="/reception/dashboard"
        class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg shadow-sm transition">
@@ -31,23 +25,18 @@
     <div id="card"
          class="bg-gradient-to-br from-green-50 to-white border border-green-300 shadow-2xl rounded-2xl flex flex-col items-center justify-center p-6"
          style="width: 86mm; height: 54mm;">
-      <!-- Hospital Name -->
       <div class="text-green-700 font-semibold text-base mb-2 text-center leading-tight">
         {{ hospital_name or "Smart QR Health Hospital" }}
       </div>
 
-      <!-- Dynamic QR -->
       <img src="/qr/{{ patient_uid }}"
            alt="QR Code"
-           onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ request.url_for('health')|replace('/health','') }}p/{{ patient_uid }}';"
            class="w-28 h-28 mb-3 border border-gray-200 rounded-lg shadow-sm hover:scale-105 transition-all duration-300" />
 
-      <!-- Patient Name -->
       <div class="text-gray-800 text-sm font-bold text-center tracking-wide">
         {{ name }}
       </div>
 
-      <!-- UID (optional small print) -->
       <div class="text-xs text-gray-500 mt-1 text-center">
         UID: {{ patient_uid }}
       </div>
@@ -55,7 +44,6 @@
   </div>
 </div>
 
-<!-- Print-Optimized Styles -->
 <style>
   @media print {
     @page { size: auto; margin: 0; }
