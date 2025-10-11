@@ -2,63 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Smart QR Health – Verification</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    @keyframes fadeIn {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    @keyframes heartbeat {0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
-    body{
-      background:linear-gradient(135deg,#0ea5e9,#0284c7,#0369a1);
-      min-height:100vh;display:flex;align-items:center;justify-content:center;
-      font-family:'Inter',sans-serif;
-    }
-    .glass{
-      backdrop-filter:blur(16px) saturate(180%);
-      background-color:rgba(255,255,255,0.15);
-      border-radius:20px;border:1px solid rgba(255,255,255,0.3);
-      animation:fadeIn 0.9s ease;
-    }
-    .heart{
-      color:#a5f3fc;font-size:2rem;
-      animation:heartbeat 1.8s infinite;
-      filter:drop-shadow(0 0 6px rgba(255,255,255,0.7));
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart QR Health | Verification</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/@tailwindcss/ui"></script>
 </head>
-<body>
-  <div class="glass w-[95%] max-w-md p-8 text-white shadow-2xl">
-    <div class="flex justify-center mb-3">
-      <div class="heart">❤️</div>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-100">
+  <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">🏥 Smart QR Health</h1>
+      <p class="text-gray-500 text-sm mt-1">Secure Access to Your Health Records</p>
     </div>
-    <h1 class="text-3xl font-semibold text-center mb-1 text-cyan-100">Smart QR Health</h1>
-    <p class="text-center text-gray-200 mb-6">Secure Patient Access Portal</p>
 
     {% if error %}
-      <div class="bg-red-500/20 text-red-100 text-sm p-3 rounded mb-4">{{ error }}</div>
+      <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg">{{ error }}</div>
     {% endif %}
 
-    <form action="/p/verify" method="post" class="space-y-5">
+    <form method="post" action="/p/verify" class="space-y-5">
       <input type="hidden" name="patient_uid" value="{{ patient.patient_uid }}" />
-      <div>
-        <label class="block text-sm text-gray-100 mb-1">Registered Mobile Number</label>
-        <input name="phone" type="tel" maxlength="10" required
-          class="w-full rounded-lg border-none px-4 py-2 text-gray-900 focus:ring-2 focus:ring-cyan-400"
-          placeholder="Enter your mobile number">
-      </div>
-      <div>
-        <label class="block text-sm text-gray-100 mb-1">One-Time Password (Use 1234 for demo)</label>
-        <input name="otp" maxlength="6" required
-          class="w-full rounded-lg border-none px-4 py-2 text-gray-900 focus:ring-2 focus:ring-cyan-400"
-          placeholder="Enter 1234">
-      </div>
-      <button type="submit"
-        class="w-full bg-cyan-400 hover:bg-cyan-300 text-gray-900 font-semibold py-2 rounded-lg transition">Access My Records</button>
-    </form>
 
-    <p class="text-center text-xs text-gray-300 mt-6">
-      Powered by Smart QR Health – Connecting Patients & Care Digitally
-    </p>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Registered Phone Number</label>
+        <input name="phone" maxlength="10" required pattern="\d{10}"
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-300 focus:outline-none"
+               placeholder="Enter your 10-digit number" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">OTP (for demo use <code>1234</code>)</label>
+        <input name="otp" maxlength="6" required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-300 focus:outline-none"
+               placeholder="Enter OTP" />
+      </div>
+
+      <button type="submit"
+              class="w-full bg-gradient-to-r from-blue-600 to-green-500 text-white py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition">
+        Verify and Continue
+      </button>
+    </form>
   </div>
 </body>
 </html>

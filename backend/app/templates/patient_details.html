@@ -1,69 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>{{ patient.name }} – Smart QR Health</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    @keyframes fadeIn {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    body{
-      background:linear-gradient(135deg,#ecfeff,#cffafe,#a5f3fc);
-      min-height:100vh;padding:2rem;font-family:'Inter',sans-serif;
-      animation:fadeIn 0.7s ease;
-    }
-    .card{
-      background:white;
-      border-radius:20px;
-      box-shadow:0 10px 25px rgba(0,0,0,0.08);
-      transition:transform 0.3s ease,box-shadow 0.3s ease;
-      animation:fadeIn 1s ease;
-    }
-    .card:hover{
-      transform:translateY(-4px);
-      box-shadow:0 15px 35px rgba(0,0,0,0.12);
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ patient.name }} | Smart QR Health</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body>
-  <div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-3xl font-semibold text-cyan-700 flex items-center gap-2">
-        <span>❤️</span> Smart QR Health
-      </h1>
-      <p class="text-gray-500 text-sm">Digital Patient Dashboard</p>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-100 flex flex-col items-center p-6">
+  <div class="bg-white/90 backdrop-blur-sm w-full max-w-3xl rounded-3xl shadow-2xl p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-blue-700">🏥 Smart QR Health</h1>
+      <p class="text-sm text-gray-500">Patient Dashboard</p>
     </div>
 
-    <div class="card p-6 mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-2">{{ patient.name }}</h2>
-      <p class="text-gray-500 text-sm mb-4">Patient ID: {{ patient.patient_uid }}</p>
+    <div class="grid md:grid-cols-2 gap-4 mb-6 text-sm text-gray-700">
+      <div class="bg-blue-50 rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-blue-700 mb-2">👤 Personal Info</h2>
+        <p><strong>Name:</strong> {{ patient.name }}</p>
+        <p><strong>Gender:</strong> {{ patient.gender or '-' }}</p>
+        <p><strong>DOB:</strong> {{ patient.dob or '-' }}</p>
+        <p><strong>Phone:</strong> {{ patient.phone }}</p>
+      </div>
 
-      <div class="grid sm:grid-cols-2 gap-4 text-sm">
-        <p><span class="text-gray-500">Gender:</span> {{ patient.gender or '-' }}</p>
-        <p><span class="text-gray-500">Phone:</span> {{ patient.phone }}</p>
-        <p><span class="text-gray-500">Email:</span> {{ patient.email or '-' }}</p>
-        <p><span class="text-gray-500">DOB:</span> {{ patient.dob or '-' }}</p>
-        {% if patient.weight %}<p><span class="text-gray-500">Weight:</span> {{ patient.weight }}</p>{% endif %}
-        {% if height %}<p><span class="text-gray-500">Height:</span> {{ height }}</p>{% endif %}
+      <div class="bg-green-50 rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-green-700 mb-2">📏 Vitals</h2>
+        <p><strong>Height:</strong> {{ height or '-' }}</p>
+        <p><strong>Weight:</strong> {{ patient.weight or '-' }}</p>
       </div>
     </div>
 
-    <div class="card p-6">
-      <h3 class="text-xl font-semibold text-cyan-700 mb-4">Medical History & Prescriptions</h3>
+    <div class="bg-gray-50 rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">💊 Recent Prescriptions</h2>
       {% if prescriptions and prescriptions|length > 0 %}
         <div class="space-y-3">
-          {% for item in prescriptions %}
-          <div class="border border-gray-200 rounded-lg p-4 hover:bg-cyan-50 transition">
-            <p class="text-xs text-gray-400 mb-1">{{ item.Date }}</p>
-            <p class="text-gray-700"><strong>Diagnosis:</strong> {{ item.Diagnosis or '-' }}</p>
-            <p class="text-gray-700"><strong>Prescription:</strong> {{ item.Prescription or '-' }}</p>
-          </div>
+          {% for p in prescriptions %}
+            <div class="border border-gray-200 rounded-xl p-4 hover:bg-white transition shadow-sm">
+              <div class="text-xs text-gray-500">{{ p.Date }}</div>
+              <div class="text-sm"><strong>Diagnosis:</strong> {{ p.Diagnosis }}</div>
+              <div class="text-sm mt-1"><strong>Prescription:</strong> {{ p.Prescription }}</div>
+            </div>
           {% endfor %}
         </div>
       {% else %}
-        <p class="text-gray-500 text-sm">No prescriptions found yet.</p>
+        <p class="text-gray-500 text-sm italic">No prescriptions found.</p>
       {% endif %}
     </div>
   </div>
+
+  <footer class="text-center text-gray-400 text-xs mt-6">
+    © Smart QR Health — Secure Digital Care Access
+  </footer>
 </body>
 </html>
