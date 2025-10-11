@@ -22,13 +22,14 @@ def get_local_ip() -> str:
         return "localhost"
 
 
-# --------------------------
+# ===================================================
 # 📁 Directories for Storage (Local Only)
-# --------------------------
-QR_DIR = Path("/app/app/static/qr")
+# ===================================================
+# Relative paths work both locally and on Render
+QR_DIR = Path("backend/app/static/qr")
 QR_DIR.mkdir(parents=True, exist_ok=True)
 
-CSV_PATH = Path("/app/app/static/data/patients.csv")
+CSV_PATH = Path("backend/app/static/data/patients.csv")
 CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # ✅ Use environment BASE_URL first, else fallback to local IP
@@ -58,12 +59,12 @@ def generate_qr_image(uid: str, qr_path: str = None):
     """
     Generate a scannable QR Code with BASE_URL/p/{uid}.
     If qr_path is provided → save locally (for dev)
-    Otherwise → return StreamingResponse (for Render)
+    Otherwise → return StreamingResponse (for Render quick demo mode)
     """
     qr_content = f"{BASE_URL}/p/{uid}"
     img = qrcode.make(qr_content)
 
-    # In Render (no disk write) → return stream
+    # Render quick-demo mode: return in-memory stream instead of file
     if os.getenv("RENDER") or not qr_path:
         buf = BytesIO()
         img.save(buf, format="PNG")
@@ -71,7 +72,7 @@ def generate_qr_image(uid: str, qr_path: str = None):
         print(f"[QR GENERATED STREAM] {qr_content}")
         return StreamingResponse(buf, media_type="image/png")
 
-    # Local → save PNG file
+    # Local dev mode: save PNG file
     img.save(qr_path)
     print(f"[QR GENERATED] {qr_content} → saved at {qr_path}")
     return qr_path
