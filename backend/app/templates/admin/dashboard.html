@@ -57,15 +57,26 @@
                 <span class="bg-blue-200 text-blue-900 px-2 py-1 rounded-full text-xs">Male</span>
               {% elif patient.gender == 'Female' %}
                 <span class="bg-pink-200 text-pink-900 px-2 py-1 rounded-full text-xs">Female</span>
-              {% else %}-{% endif %}
+              {% else %}
+                -
+              {% endif %}
             </td>
             <td class="p-3 text-center">
-              <a href="{{ url_for('static', path='qr/' + patient.qr_filename) }}" target="_blank"
-                 class="text-blue-600 hover:text-blue-800 underline text-sm">View QR</a>
+              <!-- ✅ Fixed: use dynamic /qr/{uid} route -->
+              {% if patient.patient_uid %}
+                <a href="/qr/{{ patient.patient_uid }}" target="_blank"
+                   class="text-blue-600 hover:text-blue-800 underline text-sm">
+                  View QR
+                </a>
+              {% else %}
+                <span class="text-gray-400 text-xs italic">No QR</span>
+              {% endif %}
             </td>
             <td class="p-3 text-right">
               <a href="/admin/delete/{{ patient.id }}" onclick="return confirm('Delete this patient?')"
-                 class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition text-xs font-medium">Delete</a>
+                 class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition text-xs font-medium">
+                Delete
+              </a>
             </td>
           </tr>
           {% endfor %}
