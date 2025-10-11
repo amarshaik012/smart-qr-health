@@ -1,26 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart QR Health | Verify Number</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Smart QR Health – Verification</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    @keyframes fadeIn {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes heartbeat {0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+    body{
+      background:linear-gradient(135deg,#0ea5e9,#0284c7,#0369a1);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      font-family:'Inter',sans-serif;
+    }
+    .glass{
+      backdrop-filter:blur(16px) saturate(180%);
+      background-color:rgba(255,255,255,0.15);
+      border-radius:20px;border:1px solid rgba(255,255,255,0.3);
+      animation:fadeIn 0.9s ease;
+    }
+    .heart{
+      color:#a5f3fc;font-size:2rem;
+      animation:heartbeat 1.8s infinite;
+      filter:drop-shadow(0 0 6px rgba(255,255,255,0.7));
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-    <h1 class="text-2xl font-bold text-blue-700 text-center mb-6">Smart QR Health</h1>
-    <p class="text-gray-600 text-center mb-4">Enter your registered mobile number to receive an OTP</p>
+<body>
+  <div class="glass w-[95%] max-w-md p-8 text-white shadow-2xl">
+    <div class="flex justify-center mb-3">
+      <div class="heart">❤️</div>
+    </div>
+    <h1 class="text-3xl font-semibold text-center mb-1 text-cyan-100">Smart QR Health</h1>
+    <p class="text-center text-gray-200 mb-6">Secure Patient Access Portal</p>
 
-    <form method="post" action="/p/send-otp" class="space-y-4">
-      <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
-      <input name="phone" maxlength="10" required pattern="\d{10}"
-             class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
-             placeholder="Enter 10-digit number">
+    {% if error %}
+      <div class="bg-red-500/20 text-red-100 text-sm p-3 rounded mb-4">{{ error }}</div>
+    {% endif %}
 
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium">
-        Send OTP
-      </button>
+    <form action="/p/verify" method="post" class="space-y-5">
+      <input type="hidden" name="patient_uid" value="{{ patient.patient_uid }}" />
+      <div>
+        <label class="block text-sm text-gray-100 mb-1">Registered Mobile Number</label>
+        <input name="phone" type="tel" maxlength="10" required
+          class="w-full rounded-lg border-none px-4 py-2 text-gray-900 focus:ring-2 focus:ring-cyan-400"
+          placeholder="Enter your mobile number">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-100 mb-1">One-Time Password (Use 1234 for demo)</label>
+        <input name="otp" maxlength="6" required
+          class="w-full rounded-lg border-none px-4 py-2 text-gray-900 focus:ring-2 focus:ring-cyan-400"
+          placeholder="Enter 1234">
+      </div>
+      <button type="submit"
+        class="w-full bg-cyan-400 hover:bg-cyan-300 text-gray-900 font-semibold py-2 rounded-lg transition">Access My Records</button>
     </form>
+
+    <p class="text-center text-xs text-gray-300 mt-6">
+      Powered by Smart QR Health – Connecting Patients & Care Digitally
+    </p>
   </div>
 </body>
 </html>

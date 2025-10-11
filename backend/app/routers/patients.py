@@ -1,6 +1,6 @@
 # backend/app/routers/patients.py
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -43,36 +43,62 @@ def load_prescriptions_for(uid: str):
 
 
 # -------------------------------
-# Patient QR Landing Page (OTP Skipped)
+# Step 1️⃣ — Patient QR Landing Page
 # -------------------------------
 @router.get("/p/{patient_uid}", response_class=HTMLResponse)
-def public_patient_card(
+def public_patient_entry(request: Request, patient_uid: str, db: Session = Depends(get_db)):
+    patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Render hospital name + phone/OTP entry page
+    return templates.TemplateResponse(
+        "verify_number.html",
+        {"request": request, "patient": patient, "error": None},
+    )
+
+
+# -------------------------------
+# Step 2️⃣ — Verify (Fixed OTP Flow)
+# -------------------------------
+@router.post("/p/verify", response_class=HTMLResponse)
+def verify_fixed_otp(
     request: Request,
-    patient_uid: str,
+    patient_uid: str = Form(...),
+    phone: str = Form(...),
+    otp: str = Form(...),
     db: Session = Depends(get_db),
 ):
     patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # 🔹 Skip OTP Verification — always show full data
-    verified = True
+    # ✅ Check phone and fixed OTP = 1234
+    if phone.strip() != str(patient.phone).strip():
+        return templates.TemplateResponse(
+            "verify_number.html",
+            {"request": request, "patient": patient, "error": "Phone number mismatch."},
+        )
 
+    if otp.strip() != "1234":
+        return templates.TemplateResponse(
+            "verify_number.html",
+            {"request": request, "patient": patient, "error": "Invalid OTP. Use 1234 for demo."},
+        )
+
+    # Success — show dashboard
     prescriptions = load_prescriptions_for(patient_uid)
-
-    # Normalize height display
     height = None
     if patient.height:
         height = re.sub(r"(ft|feet)+", "ft", patient.height.strip(), flags=re.IGNORECASE)
 
-    # Always render patient details directly
     return templates.TemplateResponse(
         "patient_details.html",
         {
             "request": request,
             "patient": patient,
             "height": height,
-            "verified": verified,
+            "verified": True,
             "prescriptions": prescriptions,
         },
     )
