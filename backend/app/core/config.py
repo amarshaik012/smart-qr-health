@@ -20,15 +20,12 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "app")
 
-    # ✅ ClassVar so Pydantic doesn’t treat them as model fields
+    # ✅ Marked as ClassVar to avoid Pydantic field parsing
     BASE_DIR: ClassVar[str] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     SQLITE_PATH: ClassVar[str] = os.path.join(BASE_DIR, "app.db")
 
-    # ✅ Use Render DATABASE_URL if available, otherwise fallback to SQLite
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        f"sqlite:///{SQLITE_PATH}"
-    )
+    # ✅ Use DATABASE_URL if set, else SQLite fallback
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{SQLITE_PATH}")
 
     # 📦 File storage
     QR_SAVE_DIR: str = os.getenv("QR_SAVE_DIR", "/tmp/qr")
@@ -48,4 +45,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-print(f"[CONFIG] Loaded DB: {settings.DATABASE_URL}")
+print(f"[CONFIG] ✅ Loaded DB: {settings.DATABASE_URL}")
