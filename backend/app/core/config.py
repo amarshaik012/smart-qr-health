@@ -11,16 +11,20 @@ class Settings(BaseSettings):
     BASE_URL: str = os.getenv("BASE_URL", "http://localhost:8000")
     PUBLIC_BASE_URL: str = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
 
-    # 🗄️ Database (PostgreSQL or fallback SQLite)
+    # 🗄️ Database Configuration
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "strongpass")
     POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "app")
 
+    # ✅ Use Render DATABASE_URL if available, otherwise fallback to local SQLite
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    SQLITE_PATH = os.path.join(BASE_DIR, "app.db")
+
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+        f"sqlite:///{SQLITE_PATH}"
     )
 
     # 📦 File storage
