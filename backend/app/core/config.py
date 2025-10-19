@@ -1,5 +1,7 @@
 import os
+from typing import ClassVar
 from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     # 🧠 App Info
@@ -18,10 +20,11 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "app")
 
-    # ✅ Use Render DATABASE_URL if available, otherwise fallback to local SQLite
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    SQLITE_PATH = os.path.join(BASE_DIR, "app.db")
+    # ✅ ClassVar so Pydantic doesn’t treat them as model fields
+    BASE_DIR: ClassVar[str] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    SQLITE_PATH: ClassVar[str] = os.path.join(BASE_DIR, "app.db")
 
+    # ✅ Use Render DATABASE_URL if available, otherwise fallback to SQLite
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         f"sqlite:///{SQLITE_PATH}"
@@ -42,6 +45,7 @@ class Settings(BaseSettings):
     # 🕓 Timezone / Logs
     TIMEZONE: str = os.getenv("TIMEZONE", "Asia/Kolkata")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
 
 settings = Settings()
 print(f"[CONFIG] Loaded DB: {settings.DATABASE_URL}")
