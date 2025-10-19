@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+# backend/app/routers/reception.py
+from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from collections import defaultdict
-import os, random, time, shortuuid, re
+import os, random, time, shortuuid, re, csv
 
+# Core
 from ..core.db import get_db
 from ..models.patient import Patient
+from ..models.doctor import Doctor
+from ..models.payment import Payment           # <— existing
 from ..core.qr_utils import generate_qr_image, append_to_csv
 
 router = APIRouter(prefix="/reception", tags=["Reception"])
@@ -18,11 +22,25 @@ templates.env.globals.update({"datetime": datetime})
 RECEPTION_USERNAME = "reception"
 RECEPTION_PASSWORD = "reception123"
 
-otp_store = {}
+# ✅ Use environment-based writable dirs (Docker safe)
+QR_SAVE_DIR = os.getenv("QR_SAVE_DIR", "/tmp/qr")
+DATA_SAVE_DIR = os.getenv("DATA_SAVE_DIR", "/tmp/data")
 
-# -------------------------------
-# 🔐 Login
-# -------------------------------
+os.makedirs(QR_SAVE_DIR, exist_ok=True)
+os.makedirs(DATA_SAVE_DIR, exist_ok=True)
+
+PAYMENTS_CSV = os.path.join(DATA_SAVE_DIR, "payments.csv")
+
+# Validation regex
+PHONE_RE = re.compile(r"^\d{10}$")
+GMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@gmail\.com$")
+
+# OTP store (simulated)
+otp_store: dict[str, tuple[int, float]] = {}
+
+# -----------------------------
+# Auth
+# -----------------------------
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse("reception/login.html", {"request": request, "error": None})
@@ -31,17 +49,17 @@ def login_page(request: Request):
 @router.post("/login", response_class=HTMLResponse)
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
     if username == RECEPTION_USERNAME and password == RECEPTION_PASSWORD:
-        response = RedirectResponse(url="/reception/dashboard", status_code=HTTP_302_FOUND)
-        response.set_cookie(key="reception_auth", value="true", httponly=True)
-        return response
+        resp = RedirectResponse(url="/reception/dashboard", status_code=HTTP_302_FOUND)
+        resp.set_cookie(key="reception_auth", value="true", httponly=True, samesite="Lax")
+        return resp
     return templates.TemplateResponse(
         "reception/login.html", {"request": request, "error": "Invalid username or password"}
     )
 
 
-# -------------------------------
-# 🏠 Dashboard — Grouped by Date
-# -------------------------------
+# -----------------------------
+# Dashboard
+# -----------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     if not request.cookies.get("reception_auth"):
@@ -49,7 +67,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
     patients = db.query(Patient).order_by(Patient.id.desc()).all()
     today = date.today()
-    grouped_patients = defaultdict(list)
+    grouped_patients: dict[date, list[Patient]] = defaultdict(list)
     recent_patients = 0
 
     for p in patients:
@@ -82,9 +100,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# -------------------------------
-# 📲 OTP Send + Verify
-# -------------------------------
+# -----------------------------
+# OTP (simulated)
+# -----------------------------
 @router.post("/send-otp")
 def send_otp(phone: str = Form(...)):
     otp = random.randint(100000, 999999)
@@ -108,103 +126,195 @@ def verify_otp(phone: str = Form(...), otp: str = Form(...)):
     return JSONResponse({"message": "OTP verified successfully"})
 
 
-# -------------------------------
-# 🧾 Register New Patient
-# -------------------------------
+# -----------------------------
+# Register (GET)
+# -----------------------------
 @router.get("/register", response_class=HTMLResponse)
-def register_page(request: Request):
+def register_page(request: Request, db: Session = Depends(get_db)):
     if not request.cookies.get("reception_auth"):
         return RedirectResponse(url="/reception/login", status_code=HTTP_302_FOUND)
-    return templates.TemplateResponse("reception/register.html", {"request": request})
+
+    doctors = db.query(Doctor).filter(Doctor.status == "approved").all()
+    today_str = date.today().isoformat()
+    return templates.TemplateResponse(
+        "reception/register.html",
+        {"request": request, "doctors": doctors, "error": None, "today": today_str, "form_data": {}},
+    )
 
 
+# -----------------------------
+# Register (POST)
+# -----------------------------
 @router.post("/register", response_class=HTMLResponse)
 def register_patient(
     request: Request,
-    name: str = Form(...),
-    phone: str = Form(...),
-    email: str = Form(...),
-    gender: str = Form(...),
-    dob: str = Form(None),
-    weight: str = Form(None),
-    height: str = Form(None),
+    name: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    gender: str = Form(""),
+    dob: str = Form(""),
+    weight: str = Form(""),
+    height: str = Form(""),
+    assigned_doctor: str = Form(""),
+    payment_mode: str = Form(""),
+    payment_amount: str = Form(""),
+    payment_ref: str = Form(""),
     db: Session = Depends(get_db),
 ):
     if not request.cookies.get("reception_auth"):
         return RedirectResponse(url="/reception/login", status_code=HTTP_302_FOUND)
 
-    if not re.fullmatch(r"\d{10}", phone.strip()):
+    # Helper to preserve form data
+    def fail(msg: str):
+        doctors = db.query(Doctor).filter(Doctor.status == "approved").all()
+        today_str = date.today().isoformat()
+        form_data = {
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "gender": gender,
+            "dob": dob,
+            "weight": weight,
+            "height": height,
+            "assigned_doctor": assigned_doctor,
+            "payment_mode": payment_mode,
+            "payment_amount": payment_amount,
+            "payment_ref": payment_ref,
+        }
         return templates.TemplateResponse(
-            "reception/register.html", {"request": request, "error": "Phone number must be 10 digits"}
+            "reception/register.html",
+            {"request": request, "error": msg, "doctors": doctors, "today": today_str, "form_data": form_data},
+            status_code=400,
         )
 
-    if db.query(Patient).filter(Patient.phone == phone).first():
-        return templates.TemplateResponse(
-            "reception/register.html", {"request": request, "error": "Phone already registered"}
-        )
+    # ---------- Strict validation ----------
+    if not name.strip():
+        return fail("Full name is required.")
+    if not PHONE_RE.fullmatch(phone.strip()):
+        return fail("Phone number must be exactly 10 digits.")
+    if not GMAIL_RE.fullmatch(email.strip()):
+        return fail("Email must be a valid Gmail address (e.g., name@gmail.com).")
+    if gender not in {"Male", "Female", "Other"}:
+        return fail("Please select a valid gender.")
+    try:
+        dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+    except Exception:
+        return fail("Invalid Date of Birth.")
+    if dob_date > date.today():
+        return fail("Date of Birth cannot be in the future.")
+    if not weight:
+        return fail("Weight is required.")
+    if not height:
+        return fail("Height is required.")
+    if not assigned_doctor:
+        return fail("Please assign a doctor.")
+    doctor_obj = db.query(Doctor).filter(Doctor.name == assigned_doctor, Doctor.status == "approved").first()
+    if not doctor_obj:
+        return fail("Assigned doctor is not valid or not approved.")
+    if payment_mode not in {"Cash", "UPI", "Card"}:
+        return fail("Select a valid payment mode (Cash / UPI / Card).")
+    try:
+        amount_val = float(payment_amount)
+        if amount_val < 0:
+            raise ValueError
+    except Exception:
+        return fail("Payment amount must be a number (0 or above).")
+    if db.query(Patient).filter(Patient.phone == phone.strip()).first():
+        return fail("Phone number is already registered.")
 
+    # ---------- Generate QR ----------
     uid = shortuuid.uuid()[:12]
     qr_filename = f"{uid}.png"
-    qr_dir = "app/static/qr"
-    os.makedirs(qr_dir, exist_ok=True)
-    qr_path = os.path.join(qr_dir, qr_filename)
+    qr_path = os.path.join(QR_SAVE_DIR, qr_filename)
     generate_qr_image(uid, qr_path)
 
+    # ---------- Create patient ----------
     patient = Patient(
         patient_uid=uid,
-        name=name,
-        phone=phone,
-        email=email,
-        gender=gender,
-        dob=datetime.strptime(dob, "%Y-%m-%d").date() if dob else None,
-        weight=weight,
-        height=height,
+        name=name.strip(),
+        phone=phone.strip(),
+        email=email.strip(),
+        gender=gender.strip(),
+        dob=dob,
+        weight=weight.strip(),
+        height=height.strip(),
+        assigned_doctor=assigned_doctor.strip(),
+        doctor_id=doctor_obj.id,
         qr_filename=qr_filename,
     )
     db.add(patient)
     db.commit()
     db.refresh(patient)
 
+    # ---------- CSV Logs ----------
     append_to_csv({
         "patient_uid": uid,
-        "name": name,
-        "phone": phone,
-        "email": email,
-        "gender": gender,
-        "dob": dob or "",
-        "weight": weight or "",
-        "height": height or "",
+        "name": patient.name,
+        "phone": patient.phone,
+        "email": patient.email,
+        "gender": patient.gender,
+        "dob": dob,
+        "weight": weight,
+        "height": height,
+        "assigned_doctor": assigned_doctor,
         "qr_url": f"/static/qr/{qr_filename}",
         "timestamp": datetime.utcnow().isoformat(),
     })
 
+    file_exists = os.path.isfile(PAYMENTS_CSV)
+    with open(PAYMENTS_CSV, "a", newline="") as f:
+        w = csv.writer(f)
+        if not file_exists:
+            w.writerow(["Timestamp", "PatientUID", "Name", "Mode", "Amount", "Reference"])
+        w.writerow([datetime.utcnow().isoformat(), uid, patient.name, payment_mode, f"{amount_val:.2f}", payment_ref])
+
+    # ---------- Also persist to DB ----------
+    try:
+        status = "paid" if amount_val > 0 else "pending"
+        method = payment_mode.lower()
+        db.add(
+            Payment(
+                patient_id=patient.id,
+                doctor_id=doctor_obj.id,
+                amount=amount_val,
+                status=status,
+                method=method,
+                ref=(payment_ref or "").strip(),
+            )
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[WARN] Payment DB insert failed: {e}")
+
     return RedirectResponse(url=f"/reception/qr-preview/{uid}", status_code=HTTP_302_FOUND)
 
 
-# -------------------------------
-# 🪪 QR Preview / Print Page (Fixed)
-# -------------------------------
-@router.get("/qr-preview/{uid}", response_class=HTMLResponse)
-def qr_preview(request: Request, uid: str, db: Session = Depends(get_db)):
-    """Show the printable QR Card for a patient."""
-    patient = db.query(Patient).filter(Patient.patient_uid == uid).first()
+# -----------------------------
+# QR Preview
+# -----------------------------
+@router.get("/qr-preview/{patient_uid}", response_class=HTMLResponse)
+def qr_preview(request: Request, patient_uid: str, db: Session = Depends(get_db)):
+    patient = db.query(Patient).filter(Patient.patient_uid == patient_uid).first()
     if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
+        return HTMLResponse("Patient not found", status_code=404)
     return templates.TemplateResponse(
         "reception/qr_preview.html",
         {
             "request": request,
-            "patient_uid": patient.patient_uid,
             "name": patient.name,
-            "hospital_name": "Smart QR Health Hospital"
+            "phone": patient.phone,
+            "assigned_doctor": patient.assigned_doctor or "Unassigned",
+            "qr_filename": patient.qr_filename,
+            "hospital_name": "Smart QR Health Hospital",
+            "patient_uid": patient.patient_uid,
         },
     )
 
 
-# -------------------------------
-# ✏️ Edit Patient
-# -------------------------------
+# -----------------------------
+# Edit + Logout
+# -----------------------------
 @router.get("/edit/{id}", response_class=HTMLResponse)
 def edit_patient_page(request: Request, id: int, db: Session = Depends(get_db)):
     if not request.cookies.get("reception_auth"):
@@ -223,7 +333,7 @@ def edit_patient_submit(
     phone: str = Form(...),
     email: str = Form(...),
     gender: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     if not request.cookies.get("reception_auth"):
         return RedirectResponse(url="/reception/login", status_code=HTTP_302_FOUND)
@@ -231,25 +341,23 @@ def edit_patient_submit(
     patient = db.query(Patient).filter(Patient.id == id).first()
     if not patient:
         return HTMLResponse("Patient not found", status_code=404)
+    if not PHONE_RE.fullmatch(phone.strip()):
+        return templates.TemplateResponse(
+            "reception/edit.html",
+            {"request": request, "patient": patient, "error": "Invalid phone number"},
+        )
 
-    if not re.fullmatch(r"\d{10}", phone.strip()):
-        return templates.TemplateResponse("reception/edit.html", {"request": request, "patient": patient, "error": "Invalid phone number"})
-
-    patient.name = name
-    patient.phone = phone
-    patient.email = email
-    patient.gender = gender
+    patient.name = name.strip()
+    patient.phone = phone.strip()
+    patient.email = email.strip()
+    patient.gender = gender.strip()
     db.commit()
     db.refresh(patient)
-
     return RedirectResponse(url="/reception/dashboard", status_code=HTTP_302_FOUND)
 
 
-# -------------------------------
-# 🚪 Logout
-# -------------------------------
 @router.get("/logout")
 def logout():
-    response = RedirectResponse(url="/reception/login", status_code=HTTP_302_FOUND)
-    response.delete_cookie("reception_auth")
-    return response
+    resp = RedirectResponse(url="/reception/login", status_code=HTTP_302_FOUND)
+    resp.delete_cookie("reception_auth")
+    return resp

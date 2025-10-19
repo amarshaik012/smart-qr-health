@@ -1,0 +1,56 @@
+# Root-level docker-compose.yml
+
+services:
+  db:
+    image: postgres:14
+    container_name: smartqr-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: strongpass
+      POSTGRES_DB: app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - smartqr_net
+
+  api:
+    build: ./backend                      # ✅ context fixed
+    container_name: smartqr-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+      - ./backend/app/static/data:/app/app/static/data
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:strongpass@db:5432/app
+    ports:
+      - "8000:8000"
+    networks:
+      - smartqr_net
+
+  pharmadesk:
+    build: ./backend
+    container_name: smartqr-pharmadesk
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./backend:/app
+      - ./backend/app/static/data:/app/app/static/data
+    depends_on:
+      - api
+      - db
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:strongpass@db:5432/app
+    ports:
+      - "8001:8001"
+    networks:
+      - smartqr_net
+
+volumes:
+  postgres_data:
+
+networks:
+  smartqr_net:
+    driver: bridge

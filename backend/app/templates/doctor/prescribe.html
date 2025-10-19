@@ -1,46 +1,228 @@
 {% extends "doctor/base.html" %}
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
-  <h2 class="text-2xl font-bold mb-4 text-blue-700">🩺 Prescription for {{ patient.name }}</h2>
-  <p class="text-gray-600 mb-6">
-    Patient ID: <strong>{{ patient.patient_uid }}</strong> |
-    Phone: <strong>{{ patient.phone }}</strong>
-  </p>
+
+<div class="p-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
+  <h1 class="text-3xl font-bold text-green-800 mb-6">🩺 Write Prescription</h1>
+
+  <!-- Patient Info -->
+  <div class="bg-white shadow-xl rounded-2xl p-6 mb-8 border border-green-100">
+    <h2 class="text-xl font-semibold text-gray-700 mb-2">Patient Details</h2>
+    <div class="grid sm:grid-cols-3 gap-2 text-sm">
+      <p><strong>Name:</strong> {{ patient.name }}</p>
+      <p><strong>Gender:</strong> {{ patient.gender or "-" }}</p>
+      <p><strong>DOB:</strong> {{ patient.dob or "-" }}</p>
+    </div>
+  </div>
 
   {% if error %}
-    <p class="text-red-600 mb-4">{{ error }}</p>
+  <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded mb-6">{{ error }}</div>
   {% endif %}
 
-  <form action="/doctor/prescribe/{{ patient.patient_uid }}" method="post" class="space-y-4">
-    <div>
-      <label class="block text-sm font-semibold mb-1">Diagnosis</label>
-      <textarea name="diagnosis" rows="3" required
-        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+  <!-- Prescription Form -->
+  <form id="prescriptionForm" method="post" action="/doctor/prescribe/{{ patient.patient_uid }}" class="bg-white shadow-lg rounded-2xl p-6 border border-gray-200">
+    
+    <!-- Diagnosis -->
+    <div class="mb-6">
+      <label class="block text-gray-700 font-medium mb-1">Diagnosis</label>
+      <input type="text" name="diagnosis" placeholder="e.g., Viral Fever"
+             class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-400" required>
     </div>
 
-    <div>
-      <label class="block text-sm font-semibold mb-1">Prescription</label>
-      <textarea name="prescription" rows="4" required
-        placeholder="Enter medicines, dosages, instructions..."
-        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+    <!-- Medicines -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <label class="block text-gray-700 font-medium">Medicines</label>
+        <div class="flex gap-3">
+          <button type="button" id="addMedicineBtn" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700">+ Add Medicine</button>
+          <button type="button" id="addCustomBtn" class="bg-yellow-500 text-white px-3 py-1.5 rounded hover:bg-yellow-600">🖊 Add Custom</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-200 text-sm" id="medTable">
+          <thead class="bg-gray-50 text-gray-700 sticky top-0">
+            <tr>
+              <th class="p-2 w-10">#</th>
+              <th class="p-2 text-left w-[35%]">Medicine</th>
+              <th class="p-2 text-center w-14">Qty</th>
+              <th class="p-2 text-center w-10">🌅 M</th>
+              <th class="p-2 text-center w-10">🌞 A</th>
+              <th class="p-2 text-center w-10">🌙 N</th>
+              <th class="p-2 text-center w-[10%]">Meal</th>
+              <th class="p-2 text-center w-[10%]">Duration</th>
+              <th class="p-2 text-left w-[20%]">Notes</th>
+              <th class="p-2 text-center w-[8%]">Action</th>
+            </tr>
+          </thead>
+          <tbody id="medBody"></tbody>
+        </table>
+      </div>
     </div>
 
-    <div>
-      <label class="block text-sm font-semibold mb-1">Additional Notes (Optional)</label>
-      <textarea name="notes" rows="2"
-        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"></textarea>
+    <!-- Additional Notes -->
+    <div class="mb-6">
+      <label class="block text-gray-700 font-medium mb-1">Additional Notes</label>
+      <textarea name="notes" placeholder="e.g., Drink plenty of water…" rows="3"
+                class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-400"></textarea>
     </div>
 
-    <div class="flex justify-end gap-4 mt-6">
-      <a href="/doctor/dashboard"
-         class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">
-        Cancel
-      </a>
-      <button type="submit"
-         class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-        Save Prescription
-      </button>
+    <input type="hidden" name="medicines_json" id="medicines_json">
+
+    <div class="flex justify-between mt-8">
+      <a href="/doctor/dashboard" class="bg-gray-300 text-gray-800 px-5 py-2 rounded hover:bg-gray-400">← Back</a>
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">💾 Save Prescription</button>
     </div>
   </form>
 </div>
+
+<style>
+.medSearch {
+  width: 440px !important;
+  font-size: 15px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+.medSearch:focus {
+  border-color: #22c55e;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.3);
+}
+.suggestions {
+  max-height: 16rem;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 30;
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.suggestions div { cursor: pointer; transition: background 0.2s ease; }
+.suggestions div:hover { background: #f0fdf4; }
+.suggestions::-webkit-scrollbar { width: 6px; }
+.suggestions::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 3px; }
+.stock-green { color: #16a34a; font-weight: 600; }
+.stock-red { color: #dc2626; font-weight: 600; }
+</style>
+
+<script>
+const medBody = document.getElementById("medBody");
+const addBtn = document.getElementById("addMedicineBtn");
+const addCustomBtn = document.getElementById("addCustomBtn");
+const medicinesField = document.getElementById("medicines_json");
+let medCount = 0;
+
+async function fetchMeds(q) {
+  const res = await fetch(`/doctor/api/availability?q=${encodeURIComponent(q)}`);
+  return await res.json();
+}
+
+function createMedRow(custom = false) {
+  medCount++;
+  const tr = document.createElement("tr");
+  tr.classList.add("border-t", "align-top");
+
+  tr.innerHTML = `
+    <td class="p-2 text-center">${medCount}</td>
+    <td class="p-2 relative">
+      <input type="text" class="medSearch" placeholder="Search medicine…" ${custom ? 'data-custom="1"' : ''}>
+      <div class="suggestions hidden"></div>
+    </td>
+    <td class="p-2 text-center"><input type="number" class="qty w-14 border rounded px-2 py-1 text-center" value="1" min="1"></td>
+    <td class="p-2 text-center"><input type="checkbox" class="morning"></td>
+    <td class="p-2 text-center"><input type="checkbox" class="afternoon"></td>
+    <td class="p-2 text-center"><input type="checkbox" class="night"></td>
+    <td class="p-2 text-center">
+      <select class="meal border rounded px-1 py-1">
+        <option>After Meal</option>
+        <option>Before Meal</option>
+      </select>
+    </td>
+    <td class="p-2 text-center"><input type="number" class="duration w-14 border rounded px-2 py-1 text-center" value="5"></td>
+    <td class="p-2"><input type="text" class="notes w-full border rounded px-2 py-1" placeholder="Notes…"></td>
+    <td class="p-2 text-center">
+      <button type="button" class="delBtn text-red-600 hover:text-red-800 font-medium">Delete</button>
+    </td>
+  `;
+
+  const input = tr.querySelector(".medSearch");
+  const suggestionBox = tr.querySelector(".suggestions");
+
+  input.addEventListener("input", async () => {
+    const q = input.value.trim();
+    if (q.length < 1) {
+      suggestionBox.classList.add("hidden");
+      suggestionBox.innerHTML = "";
+      return;
+    }
+
+    try {
+      const meds = await fetchMeds(q);
+      if (!meds || !meds.length) {
+        suggestionBox.innerHTML = `<div class="p-2 text-gray-500 text-sm">No matches found</div>`;
+      } else {
+        suggestionBox.innerHTML = meds.map(m => `
+          <div class="p-2 border-b text-sm flex justify-between items-center">
+            <div>
+              <span class="font-semibold">${m.name}</span>
+              <span class="text-gray-500 text-xs ml-1">${m.strength || ''} ${m.form ? '(' + m.form + ')' : ''}</span>
+            </div>
+            <span class="${m.in_stock ? 'stock-green' : 'stock-red'} text-xs">
+              ${m.in_stock ? 'In Stock' : 'Out of Stock'}
+            </span>
+          </div>
+        `).join("");
+      }
+      suggestionBox.classList.remove("hidden");
+    } catch (err) {
+      suggestionBox.innerHTML = `<div class="p-2 text-red-600 text-sm">Error loading data</div>`;
+      suggestionBox.classList.remove("hidden");
+    }
+  });
+
+  suggestionBox.addEventListener("click", (e) => {
+    const target = e.target.closest("div.p-2");
+    if (!target) return;
+    input.value = target.querySelector(".font-semibold").textContent;
+    suggestionBox.classList.add("hidden");
+  });
+
+  tr.querySelector(".delBtn").addEventListener("click", () => {
+    tr.remove();
+    updateJson();
+  });
+
+  medBody.appendChild(tr);
+}
+
+addBtn.addEventListener("click", () => createMedRow());
+addCustomBtn.addEventListener("click", () => createMedRow(true));
+
+const form = document.getElementById("prescriptionForm");
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  updateJson();
+  form.submit();
+});
+
+function updateJson() {
+  const meds = Array.from(medBody.querySelectorAll("tr")).map(tr => ({
+    name: tr.querySelector(".medSearch").value,
+    qty: parseInt(tr.querySelector(".qty").value || 1),
+    times: {
+      morning: tr.querySelector(".morning").checked,
+      afternoon: tr.querySelector(".afternoon").checked,
+      night: tr.querySelector(".night").checked,
+    },
+    meal: tr.querySelector(".meal").value,
+    duration: tr.querySelector(".duration").value,
+    notes: tr.querySelector(".notes").value,
+  }));
+  medicinesField.value = JSON.stringify(meds);
+}
+</script>
+
 {% endblock %}

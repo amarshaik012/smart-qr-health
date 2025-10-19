@@ -1,3 +1,4 @@
+# app/core/qr_utils.py
 import qrcode
 import re
 import os
@@ -7,6 +8,9 @@ from pathlib import Path
 import csv
 from fastapi.responses import StreamingResponse
 
+# -----------------------------------------------------
+# 🔹 Helper: Get local IP (for BASE_URL fallback)
+# -----------------------------------------------------
 def get_local_ip() -> str:
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -17,15 +21,31 @@ def get_local_ip() -> str:
     except Exception:
         return "localhost"
 
-QR_DIR = Path("/app/app/static/qr")
-QR_DIR.mkdir(parents=True, exist_ok=True)
 
-CSV_PATH = Path("/app/app/static/data/patients.csv")
-CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+# -----------------------------------------------------
+# 🔹 Writable paths (safe for production & Docker)
+# -----------------------------------------------------
+# Use /tmp which is always writable in containers.
+# Allow override via environment variables for flexibility.
+BASE_QR_DIR = os.getenv("QR_SAVE_DIR", "/tmp/qr")
+BASE_DATA_DIR = os.getenv("DATA_SAVE_DIR", "/tmp/data")
+
+QR_DIR = Path(BASE_QR_DIR).resolve()
+DATA_DIR = Path(BASE_DATA_DIR).resolve()
+QR_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+CSV_PATH = DATA_DIR / "patients.csv"
 
 BASE_URL = os.getenv("BASE_URL") or f"http://{get_local_ip()}:8000"
 print(f"[QR CONFIG] Final BASE_URL → {BASE_URL}")
+print(f"[QR CONFIG] QR_DIR → {QR_DIR}")
+print(f"[QR CONFIG] CSV_PATH → {CSV_PATH}")
 
+
+# -----------------------------------------------------
+# 🔹 Height normalizer
+# -----------------------------------------------------
 def normalize_height(height: str | None) -> str:
     if not height:
         return ""
@@ -36,10 +56,15 @@ def normalize_height(height: str | None) -> str:
         height += " ft"
     return height
 
+
+# -----------------------------------------------------
+# 🔹 Generate QR image
+# -----------------------------------------------------
 def generate_qr_image(uid: str, qr_path: str = None):
     qr_content = f"{BASE_URL}/p/{uid}"
     img = qrcode.make(qr_content)
 
+    # Stream directly (for hosted environments like Render)
     if os.getenv("RENDER") or not qr_path:
         buf = BytesIO()
         img.save(buf, format="PNG")
@@ -47,10 +72,16 @@ def generate_qr_image(uid: str, qr_path: str = None):
         print(f"[QR GENERATED STREAM] {qr_content}")
         return StreamingResponse(buf, media_type="image/png")
 
+    # ✅ Ensure target directory is writable
+    Path(qr_path).parent.mkdir(parents=True, exist_ok=True)
     img.save(qr_path)
     print(f"[QR GENERATED] {qr_content} → saved at {qr_path}")
     return qr_path
 
+
+# -----------------------------------------------------
+# 🔹 Append new patient record to CSV
+# -----------------------------------------------------
 def append_to_csv(data: dict):
     file_exists = CSV_PATH.exists()
     fieldnames = [
@@ -76,6 +107,7 @@ def append_to_csv(data: dict):
             print(f"[WARN] Corrupted CSV detected ({e}), recreating patients.csv")
             valid_rows = []
 
+    # ✅ Write existing + new data safely
     with open(CSV_PATH, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

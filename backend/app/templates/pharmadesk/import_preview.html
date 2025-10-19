@@ -1,0 +1,45 @@
+{% extends "pharmadesk/base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-6 border border-blue-200">
+  <h2 class="text-2xl font-bold text-blue-700 mb-4">👀 Preview Import</h2>
+  <p class="text-gray-700 mb-4">File: <strong>{{ filename }}</strong> ({{ total }} rows)</p>
+
+  {% if mapped_fields %}
+  <p class="text-sm text-gray-600 mb-3">Mapped fields detected: {{ mapped_fields|join(", ") }}</p>
+  {% endif %}
+
+  <div class="overflow-x-auto mb-6 border rounded">
+    <table class="min-w-full text-sm border-collapse">
+      <thead class="bg-gray-100 border-b">
+        <tr>
+          {% for k in rows[0].keys() if rows %}
+          <th class="p-2 text-left font-semibold text-gray-700 border-r">{{ k }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="border-b hover:bg-gray-50">
+          {% for v in r.values() %}
+          <td class="p-2 border-r text-gray-800">{{ v }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="/pharmadesk/import/confirm" class="space-y-3">
+    <input type="hidden" name="token" value="{{ token }}">
+    <label class="inline-flex items-center gap-2 text-sm">
+      <input type="checkbox" name="create_missing" checked>
+      Create missing items
+    </label>
+    <label class="inline-flex items-center gap-2 text-sm">
+      <input type="checkbox" name="update_existing" checked>
+      Update existing items
+    </label>
+    <button class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">Confirm Import</button>
+  </form>
+</div>
+{% endblock %}

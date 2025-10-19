@@ -1,0 +1,3 @@
+PatientUID,Name,Doctor,Diagnosis,Medicines,Notes,Timestamp
+jfUPVNxY4W6o,AMY,J,Fever,"[{""medicine_id"": null, ""name"": ""dolo"", ""qty"": 1, ""times"": {""morning"": false, ""afternoon"": false, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,2025-10-17T16:54:29.526661
+jfUPVNxY4W6o,AMY,J,fever,"[{""medicine_id"": null, ""name"": ""dolo"", ""qty"": 1, ""times"": {""morning"": false, ""afternoon"": false, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,2025-10-17T16:54:41.943827

@@ -3,32 +3,38 @@
 # =========================
 FROM python:3.11-slim
 
+# Prevent Python from writing .pyc files & enable unbuffered output
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Working directory inside container
+# Working directory inside the container
 WORKDIR /app
 
-# Install dependencies
-COPY backend/requirements.txt .
+# Install dependencies for bcrypt and psycopg2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy app code from backend/app
-COPY backend/app ./app
+# ✅ Copy requirements file directly (no backend/ prefix)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ✅ Copy app source (no backend/ prefix)
+COPY app ./app
+
+# Prepare static directories (for QR and prescription data)
+RUN mkdir -p /app/app/static/qr /app/app/static/data && \
+    chmod -R 777 /app/app/static
+
+# Environment variables
+ENV STATIC_DIR=/app/app/static
+ENV PYTHONPATH=/app
 
 # Expose FastAPI port
 EXPOSE 8000
 
-ENV STATIC_DIR=/app/app/static
-ENV PYTHONPATH=/app
-
-# Prepare static directories
-RUN mkdir -p /app/app/static/qr /app/app/static/data
-RUN chmod -R 777 /app/app/static
-
-# Run the FastAPI app
+# Default command to run FastAPI app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

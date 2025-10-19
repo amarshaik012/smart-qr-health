@@ -1,9 +1,9 @@
-PatientUID,Name,Diagnosis,Prescription,Notes,Timestamp
-ZKzsvsJ4LoFL,superman,he,he,ntg,2025-10-07T05:54:43.875489
-ZKzsvsJ4LoFL,superman,fever,dolo,take rest,2025-10-07T06:01:04.040755
-5xHK4jXf6knY,Gymson,cough,syrup,,2025-10-07T15:06:54.315430
-2DRm6DYrDCW8,superman,fever,dolo,,2025-10-07T15:12:25.449087
-WfTp7pxLRnjU,kiran ,fever,dolo,rest,2025-10-07T15:31:16.642134
-WfTp7pxLRnjU,kiran ,cough,syrup,,2025-10-07T15:32:27.571797
-miKyZU8grQxf,boot,fright,lite,,2025-10-08T14:57:36.459601
-bPFp6GEKdXWr,Johnny Silver,fever,dolo,,2025-10-11T08:08:20.462699
+AqB7JUjXizUP,Super man,RAJ,fever,"[{""medicine_id"": ""316"", ""name"": ""Dolo (Guaifenesin) 50 mg (suspension)"", ""qty"": 4, ""times"": {""morning"": true, ""afternoon"": false, ""night"": true}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """", ""inventory_label"": ""Dolo (Guaifenesin) 50 mg suspension"", ""in_stock_qty"": 261}]",,2025-10-17T16:41:28.432224
+oPyVZivzKK8H,Drake,fever,"[{""medicine_id"": null, ""name"": ""dolo"", ""qty"": 1, ""times"": {""morning"": false, ""afternoon"": false, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,SR,2025-10-18T05:17:10.011412
+oPyVZivzKK8H,Drake,fever,"[{""medicine_id"": null, ""name"": ""dolo"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": true, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,SR,2025-10-18T05:17:29.546138
+PwgJo8mgmQPo,trick,fever,"[{""medicine_id"": null, ""name"": ""dolo"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": true, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,fun,2025-10-18T05:28:25.094515
+PwgJo8mgmQPo,trick,fever,"[{""name"": ""Diamicron (Chlorpheniramine)"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": false, ""night"": true}, ""meal"": ""Before Meal"", ""duration"": ""5"", ""notes"": """"}, {""name"": """", ""qty"": 1, ""times"": {""morning"": false, ""afternoon"": false, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,fun,2025-10-18T06:18:26.199066
+hDssRsJGVYMW,random,cough ,"[{""name"": ""Pan (Ambroxol)"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": true, ""night"": false}, ""meal"": ""After Meal"", ""duration"": ""3"", ""notes"": """"}]",,fun,2025-10-18T06:44:18.454100
+YEbURqPhkVSr,AI,Test,"[{""name"": ""Flagyl (Cetirizine)"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": true, ""night"": true}, ""meal"": ""Before Meal"", ""duration"": ""5"", ""notes"": ""rest""}]",,fun,2025-10-18T10:50:38.695814
+YEbURqPhkVSr,AI,high fever,"[{""name"": ""Urimax (Fexofenadine)"", ""qty"": 1, ""times"": {""morning"": true, ""afternoon"": true, ""night"": true}, ""meal"": ""After Meal"", ""duration"": ""5"", ""notes"": """"}]",,fun,2025-10-18T11:28:45.601172
+2ev3nvMGX3XT,march,fever,"[{""name"": ""Diamicron (Chlorpheniramine)"", ""qty"": 3, ""times"": {""morning"": true, ""afternoon"": true, ""night"": true}, ""meal"": ""After Meal"", ""duration"": ""3"", ""notes"": ""rest""}]",,a,2025-10-18T15:51:06.791567

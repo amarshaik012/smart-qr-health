@@ -1,16 +1,41 @@
+# --- Core Framework ---
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-pydantic-settings==2.4.0
+
+# --- ORM / Database ---
 SQLAlchemy==2.0.34
 psycopg2-binary==2.9.9
+alembic==1.13.2  # ✅ optional for schema migrations (recommended)
+pydantic-settings==2.4.0
+
+# --- Utilities ---
+python-dotenv==1.0.1
+shortuuid
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+itsdangerous>=2.1.0  # ✅ for signed URLs in PharmaDesk
+
+# --- Caching / Messaging ---
 redis==5.0.8
+
+# --- File Handling / Uploads ---
 python-multipart==0.0.9
 Pillow==10.4.0
+
+# --- OCR & Image Recognition ---
 opencv-python-headless==4.10.0.84
 pytesseract==0.3.13
-rapidfuzz==3.9.7
-python-dotenv==1.0.1
-email-validator==2.1.0.post1
 qrcode[pil]
+
+# --- Templating / Web ---
 jinja2==3.1.4
-shortuuid
+email-validator==2.1.0.post1
+
+# --- Search & Matching ---
+rapidfuzz==3.9.7
+
+# --- Recommended for production debugging/logging ---
+loguru==0.7.2
+
+# --- PDF / Report Generation ---
+reportlab==3.6.13

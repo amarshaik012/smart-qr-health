@@ -1,0 +1,31 @@
+{% extends "pharmadesk/base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white shadow-lg rounded-2xl p-6 border border-blue-200">
+  <h2 class="text-2xl font-bold text-blue-700 mb-4">📥 Import Medicines CSV</h2>
+
+  <form method="post" action="/pharmadesk/import/preview" enctype="multipart/form-data" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Choose CSV File</label>
+      <input type="file" name="file" accept=".csv" required class="border rounded-lg px-3 py-2 w-full">
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      <label class="inline-flex items-center gap-2 text-sm">
+        <input type="checkbox" name="replace_all">
+        Replace All (sync database to file)
+      </label>
+      <label class="inline-flex items-center gap-2 text-sm">
+        <input type="checkbox" name="quick" checked>
+        Quick Import (skip preview)
+      </label>
+    </div>
+
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded">Upload</button>
+  </form>
+
+  <p class="mt-4 text-sm text-gray-500">
+    Expected columns:
+    <code>name,strength,form,mrp,tax_pct,stock_qty,reorder_level,batch_no,expiry_date</code>
+  </p>
+</div>
+{% endblock %}

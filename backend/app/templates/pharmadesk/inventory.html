@@ -1,0 +1,211 @@
+{% extends "pharmadesk/base.html" %}
+{% block content %}
+
+<div class="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6 border border-blue-200">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-blue-700">📦 Inventory</h2>
+    <a href="/pharmadesk/" class="text-sm text-blue-700 hover:underline">← Back to Dashboard</a>
+  </div>
+
+  {% if error %}
+  <div class="bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded mb-4">{{ error }}</div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Add new -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <h3 class="font-semibold text-blue-800 mb-3">➕ Add Medicine</h3>
+      <form action="/pharmadesk/inventory/add" method="post" class="space-y-3">
+        <div>
+          <label class="text-sm font-medium">Name *</label>
+          <input name="name" required class="w-full border rounded px-3 py-2" placeholder="Dolo 650" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Strength</label>
+            <input name="strength" class="w-full border rounded px-3 py-2" placeholder="650 mg" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Form</label>
+            <input name="form" class="w-full border rounded px-3 py-2" placeholder="tablet / syrup" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">MRP (₹)</label>
+            <input name="mrp" type="number" step="0.01" class="w-full border rounded px-3 py-2" value="0" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Tax %</label>
+            <input name="tax_pct" type="number" step="0.01" class="w-full border rounded px-3 py-2" value="0" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Stock Qty</label>
+            <input name="stock_qty" type="number" class="w-full border rounded px-3 py-2" value="0" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Reorder Level</label>
+            <input name="reorder_level" type="number" class="w-full border rounded px-3 py-2" value="0" />
+          </div>
+        </div>
+        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Add</button>
+      </form>
+    </div>
+
+    <!-- Import / Export -->
+    <div class="bg-white border rounded-xl p-4">
+      <h3 class="font-semibold text-gray-800 mb-3">📥 Bulk Import / Export</h3>
+      <div class="space-y-3">
+        <form id="importForm" class="flex flex-col gap-3" enctype="multipart/form-data">
+          <input type="file" name="file" accept=".csv" class="border rounded px-2 py-1">
+          <div class="flex items-center gap-2">
+            <label class="text-sm"><input type="checkbox" name="replace_all"> Replace All (sync to CSV)</label>
+            <label class="text-sm"><input type="checkbox" name="quick" checked> Quick Import</label>
+          </div>
+          <button class="px-3 py-2 bg-gray-800 text-white rounded">Import CSV</button>
+        </form>
+        <a class="px-3 py-2 inline-block bg-blue-600 text-white rounded" href="/pharmadesk/inventory/export">Download CSV</a>
+        <p class="text-xs text-gray-500">CSV headers: name,strength,form,mrp,tax_pct,stock_qty,reorder_level,batch_no,expiry_date</p>
+      </div>
+    </div>
+
+    <!-- Live refresh -->
+    <div class="bg-white border rounded-xl p-4">
+      <h3 class="font-semibold text-gray-800 mb-3">⏰ Live View</h3>
+      <p class="text-sm text-gray-600">This table auto-refreshes every 30s.</p>
+      <label class="inline-flex items-center gap-2 text-sm mt-2">
+        <input id="autoRefresh" type="checkbox" class="border" checked> Auto-refresh
+      </label>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="bg-white border rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold text-gray-800">Current Stock</h3>
+      <form method="get" class="flex items-center gap-2">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search..." class="border rounded px-3 py-1">
+        <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Search</button>
+      </form>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm border rounded" id="invTable">
+        <thead class="bg-gray-50 border-b">
+          <tr class="text-gray-700 font-semibold">
+            <th class="p-2 text-left w-10">#</th>
+            <th class="p-2 text-left">Medicine</th>
+            <th class="p-2 text-right">Stock</th>
+            <th class="p-2 text-right">MRP</th>
+            <th class="p-2 text-right">Tax %</th>
+            <th class="p-2 text-right">Reorder</th>
+          </tr>
+        </thead>
+        <tbody id="invBody">
+          {% for m in meds %}
+          {% set color = 'green' %}
+          {% if m.stock_qty <= m.reorder_level %}
+            {% set color = 'red' %}
+          {% elif m.stock_qty <= (m.reorder_level * 1.5) %}
+            {% set color = 'orange' %}
+          {% endif %}
+          <tr data-id="{{ m.id }}" class="{% if color == 'red' %}bg-red-50{% elif color == 'orange' %}bg-orange-50{% else %}bg-green-50{% endif %}">
+            <td class="p-2 text-gray-600">{{ offset + loop.index }}</td>
+            <td class="p-2 font-medium text-gray-800">{{ m.label() }}</td>
+            <td class="p-2 text-right font-semibold text-gray-700">{{ m.stock_qty }}</td>
+            <td class="p-2 text-right text-gray-700">₹{{ '%.2f'|format(m.mrp or 0) }}</td>
+            <td class="p-2 text-right text-gray-700">{{ '%.2f'|format(m.tax_pct or 0) }}%</td>
+            <td class="p-2 text-right text-gray-700">{{ m.reorder_level }}</td>
+          </tr>
+          {% endfor %}
+          {% if meds|length == 0 %}
+          <tr><td colspan="6" class="p-3 text-center text-gray-500">No medicines yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="flex justify-center items-center gap-2 mt-5">
+      {% if page > 1 %}
+      <a href="?page={{ page - 1 }}&q={{ q }}" class="px-3 py-1 border rounded hover:bg-blue-50">« Prev</a>
+      {% endif %}
+
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+          <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ p }}</span>
+        {% elif p <= 3 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+          <a href="?page={{ p }}&q={{ q }}" class="px-3 py-1 border rounded hover:bg-blue-50">{{ p }}</a>
+        {% elif p == 4 and page > 5 %}
+          <span class="px-2">...</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if page < total_pages %}
+      <a href="?page={{ page + 1 }}&q={{ q }}" class="px-3 py-1 border rounded hover:bg-blue-50">Next »</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="text-xs text-gray-500 mt-3 text-center">
+      Showing {{ offset + 1 }}–{{ offset + meds|length }} of {{ total }}
+    </div>
+
+    <div class="text-xs text-gray-500 mt-4">
+      Legend:
+      <span class="px-2 rounded bg-green-100 border border-green-300">Healthy</span>
+      <span class="px-2 rounded bg-orange-100 border border-orange-300">Near reorder</span>
+      <span class="px-2 rounded bg-red-100 border border-red-300">Low stock</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="hidden fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg"></div>
+
+<script>
+document.getElementById("importForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fileInput = e.target.querySelector('input[type="file"]');
+  if (!fileInput.files.length) return alert("Please choose a CSV file first.");
+
+  const formData = new FormData(e.target);
+  const res = await fetch("/pharmadesk/inventory/import", { method: "POST", body: formData });
+  const data = await res.json();
+
+  if (data.status === "confirm") {
+    if (confirm(`${data.message}\n\nProceed with import?`)) {
+      formData.append("confirm", "yes");
+      const res2 = await fetch("/pharmadesk/inventory/import", { method: "POST", body: formData });
+      const done = await res2.json();
+      showToast(done.message || "Import completed!");
+      setTimeout(() => location.reload(), 1500);
+    }
+  } else if (data.status === "success") {
+    showToast(data.message || "Import successful!");
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    alert(data.detail || "Import failed.");
+  }
+});
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  setTimeout(() => t.classList.add("hidden"), 2500);
+}
+
+// Auto-refresh
+let timer;
+const autoCb = document.getElementById("autoRefresh");
+function startAuto() { timer = setInterval(() => window.location.reload(), 30000); }
+function stopAuto() { if (timer) clearInterval(timer); }
+autoCb.addEventListener("change", () => autoCb.checked ? startAuto() : stopAuto());
+startAuto();
+</script>
+
+{% endblock %}

@@ -5,33 +5,15 @@
   <!-- 🩺 Header -->
   <div class="sticky top-0 z-20 bg-white shadow-sm border border-gray-200 rounded-xl mb-6 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <h2 class="text-2xl font-semibold text-green-700 flex items-center gap-2">
-      💊 Reception Dashboard
+      🩺 Patient Registrations
     </h2>
-    <p class="text-sm text-gray-500">Quick overview of patient registrations by day</p>
-  </div>
-
-  <!-- 📊 Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-gradient-to-r from-blue-100 to-blue-200 shadow rounded-xl p-5 text-center border border-blue-300">
-      <p class="text-blue-800 font-medium text-sm">Total Patients</p>
-      <h2 class="text-4xl font-extrabold text-blue-700 mt-1">{{ total_patients }}</h2>
-    </div>
-
-    <div class="bg-gradient-to-r from-green-100 to-green-200 shadow rounded-xl p-5 text-center border border-green-300">
-      <p class="text-green-800 font-medium text-sm">Patients Registered Today</p>
-      <h2 class="text-4xl font-extrabold text-green-700 mt-1">{{ recent_patients }}</h2>
-    </div>
-
-    <div class="bg-gradient-to-r from-yellow-100 to-yellow-200 shadow rounded-xl p-5 text-center border border-yellow-300">
-      <p class="text-yellow-800 font-medium text-sm">QR Codes Generated</p>
-      <h2 class="text-4xl font-extrabold text-yellow-700 mt-1">{{ total_patients }}</h2>
-    </div>
+    <p class="text-sm text-gray-500">List of all patients registered through this reception portal</p>
   </div>
 
   <!-- 📅 Date-Wise Patient Groups -->
   {% for reg_date, patients in grouped_patients.items() %}
   <div class="mb-8 bg-white shadow-lg rounded-xl border border-gray-200">
-    <div class="bg-green-50 border-b border-green-200 p-4 rounded-t-xl flex justify-between items-center">
+    <div class="bg-green-50 border-b border-green-200 p-4 rounded-t-xl">
       <h3 class="text-lg font-semibold text-green-700">
         {% if reg_date == datetime.utcnow().date() %}
           🗓️ Today ({{ reg_date.strftime('%d %b %Y') }})
@@ -39,19 +21,17 @@
           📅 {{ reg_date.strftime('%A, %d %b %Y') }}
         {% endif %}
       </h3>
-      <span class="text-sm text-green-800 font-medium">Total: {{ patients|length }}</span>
     </div>
 
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm text-gray-700">
         <thead class="bg-green-100 text-green-900 text-left">
           <tr>
-            <th class="p-3 text-center">#</th>
             <th class="p-3">Name</th>
             <th class="p-3">Phone</th>
             <th class="p-3">Email</th>
             <th class="p-3">Gender</th>
-            <th class="p-3">DOB</th>
+            <th class="p-3">Assigned Doctor</th>
             <th class="p-3 text-center">QR</th>
             <th class="p-3 text-right">Edit</th>
           </tr>
@@ -59,7 +39,6 @@
         <tbody>
           {% for p in patients %}
           <tr class="hover:bg-green-50 border-b border-gray-100 transition">
-            <td class="p-3 text-center text-gray-500">{{ loop.index }}</td>
             <td class="p-3 font-semibold text-green-700">{{ p.name }}</td>
             <td class="p-3">{{ p.phone }}</td>
             <td class="p-3">{{ p.email or '-' }}</td>
@@ -72,14 +51,11 @@
                 -
               {% endif %}
             </td>
-            <td class="p-3">{{ p.dob or '-' }}</td>
-
-            <!-- ✅ Fixed: View QR (Now opens secure card preview) -->
+            <td class="p-3 text-green-800 font-medium">{{ p.assigned_doctor or 'Unassigned' }}</td>
             <td class="p-3 text-center">
               <a href="/reception/qr-preview/{{ p.patient_uid }}" target="_blank"
                  class="text-green-600 hover:text-green-800 underline text-sm">View QR</a>
             </td>
-
             <td class="p-3 text-right">
               <a href="/reception/edit/{{ p.id }}"
                  class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg transition text-xs font-medium">Edit</a>
@@ -90,6 +66,8 @@
       </table>
     </div>
   </div>
+  {% else %}
+  <div class="text-center text-gray-500 py-8 italic">No patient records found.</div>
   {% endfor %}
 </div>
 {% endblock %}

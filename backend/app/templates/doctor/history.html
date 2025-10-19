@@ -1,40 +1,117 @@
 {% extends "doctor/base.html" %}
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
-  <h2 class="text-2xl font-bold text-blue-700 mb-2">
-    🩺 Patient History — {{ patient.name }}
-  </h2>
-  <p class="text-gray-600 mb-6">
-    ID: <strong>{{ patient.patient_uid }}</strong> |
-    Phone: <strong>{{ patient.phone }}</strong> |
-    Email: <strong>{{ patient.email }}</strong>
-  </p>
 
-  {% if prescriptions %}
-  <div class="space-y-4">
-    {% for p in prescriptions %}
-    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      {% set ts = datetime.fromisoformat(p.Timestamp) %}
-      <p class="text-sm text-gray-500 mb-1">
-        🕒 {{ ts.strftime("%d %b %Y, %I:%M %p") }}
+<div class="p-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
+  <h1 class="text-3xl font-bold text-blue-800 mb-6">📋 Prescription History</h1>
+
+  <!-- Patient Info -->
+  <div class="bg-white shadow-xl rounded-2xl p-6 mb-8 border border-blue-100">
+    <h2 class="text-xl font-semibold text-gray-700 mb-2">Patient Details</h2>
+    <div class="grid sm:grid-cols-3 gap-2 text-sm">
+      <p><strong>Name:</strong> {{ patient.name }}</p>
+      <p><strong>Gender:</strong> {{ patient.gender or "-" }}</p>
+      <p><strong>Age:</strong>
+        {% if patient.dob %}
+          {% set dob = patient.dob %}
+          {% if dob|length == 10 %}
+            {% set birth_year = dob[:4]|int %}
+            {% set birth_month = dob[5:7]|int %}
+            {% set birth_day = dob[8:10]|int %}
+            {% set age = today.year - birth_year - ((today.month, today.day) < (birth_month, birth_day)) %}
+            {{ age }} yrs
+          {% else %}
+            —
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
       </p>
-      <p><strong>Diagnosis:</strong> {{ p.Diagnosis }}</p>
-      <p><strong>Prescription:</strong> {{ p.Prescription }}</p>
-      {% if p.Notes %}
-        <p><strong>Notes:</strong> {{ p.Notes }}</p>
-      {% endif %}
+    </div>
+  </div>
+
+  {% if prescriptions|length == 0 %}
+  <div class="text-center py-20 text-gray-600">
+    No prescriptions found for this patient.
+  </div>
+  {% else %}
+  <div class="space-y-10">
+    {% for p in prescriptions %}
+    <div class="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+      <div class="px-6 py-3 bg-gradient-to-r from-blue-600 to-teal-500 text-white flex justify-between items-center">
+        <h2 class="font-semibold text-lg">
+          🩺 {{ p.Diagnosis or p.diagnosis or "General Consultation" }}
+        </h2>
+        <p class="text-sm opacity-90">
+          🕒 {{ p.Timestamp or p.created_at or "—" }}
+        </p>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+            <thead class="bg-gray-50 text-gray-700">
+              <tr>
+                <th class="p-2 text-left">#</th>
+                <th class="p-2 text-left">Medicine</th>
+                <th class="p-2 text-center">🌅 Morning</th>
+                <th class="p-2 text-center">🌞 Afternoon</th>
+                <th class="p-2 text-center">🌙 Night</th>
+                <th class="p-2 text-left">Meal</th>
+                <th class="p-2 text-left">Duration</th>
+                <th class="p-2 text-left">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set meds = p.Medicines or p.medicines_json %}
+              {% if meds and meds|length > 0 %}
+                {% for m in meds %}
+                  {% if m is string %}
+                    <tr class="border-t border-gray-100 hover:bg-gray-50">
+                      <td class="p-2">{{ loop.index }}</td>
+                      <td class="p-2 font-medium text-gray-800">{{ m }}</td>
+                      <td class="p-2 text-center">—</td>
+                      <td class="p-2 text-center">—</td>
+                      <td class="p-2 text-center">—</td>
+                      <td class="p-2">—</td>
+                      <td class="p-2">—</td>
+                      <td class="p-2">—</td>
+                    </tr>
+                  {% else %}
+                    <tr class="border-t border-gray-100 hover:bg-gray-50">
+                      <td class="p-2">{{ loop.index }}</td>
+                      <td class="p-2 font-medium text-gray-800">{{ m.name }}</td>
+                      <td class="p-2 text-center">{% if m.times.morning %}✔{% else %}—{% endif %}</td>
+                      <td class="p-2 text-center">{% if m.times.afternoon %}✔{% else %}—{% endif %}</td>
+                      <td class="p-2 text-center">{% if m.times.night %}✔{% else %}—{% endif %}</td>
+                      <td class="p-2">{{ m.meal or "—" }}</td>
+                      <td class="p-2">{{ m.duration or "—" }} day(s)</td>
+                      <td class="p-2">{{ m.notes or "—" }}</td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="8" class="p-3 text-center text-gray-500">No medicines recorded.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if p.Notes or p.notes %}
+        <div class="bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+          <strong>Doctor Notes:</strong> {{ p.Notes or p.notes }}
+        </div>
+        {% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>
-  {% else %}
-  <p class="text-gray-600">No prescriptions found for this patient yet.</p>
   {% endif %}
 
-  <div class="mt-6">
-    <a href="/doctor/dashboard"
-       class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
-       ← Back to Dashboard
+  <div class="flex justify-end mt-10">
+    <a href="/doctor/dashboard" class="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition">
+      ← Back to Dashboard
     </a>
   </div>
 </div>
+
 {% endblock %}

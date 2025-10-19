@@ -1,0 +1,98 @@
+{% extends "pharmadesk/base.html" %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto bg-white shadow-lg rounded-2xl border border-gray-200">
+  <div class="p-5 border-b flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-gray-800">🧾 Invoice Preview</h2>
+      <p class="text-xs text-gray-500">
+        Dispense #{{ dispense.id }} • {{ dispense.created_at.strftime("%d-%b-%Y %H:%M") if dispense.created_at else "" }}
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/pharmadesk/" class="px-3 py-2 border rounded text-gray-700 hover:bg-gray-50">← Dashboard</a>
+      <button onclick="window.print()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">🖨️ Print</button>
+    </div>
+  </div>
+
+  <div class="p-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div class="bg-green-50 border border-green-200 rounded p-3">
+        <div class="font-semibold text-green-800 mb-1">👤 Patient</div>
+        <div><span class="font-medium">Name:</span> {{ patient.name if patient else "-" }}</div>
+        <div><span class="font-medium">UID:</span> {{ patient.patient_uid if patient else "-" }}</div>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 rounded p-3">
+        <div class="font-semibold text-blue-800 mb-1">💳 Payment</div>
+        <div><span class="font-medium">Mode:</span> {{ (dispense.payment_mode or "cash")|title }}</div>
+        <div><span class="font-medium">Pharmacist:</span> {{ dispense.pharmacist or "-" }}</div>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left p-2 border-b">#</th>
+            <th class="text-left p-2 border-b">Item</th>
+            <th class="text-right p-2 border-b">Qty</th>
+            <th class="text-right p-2 border-b">MRP ₹</th>
+            <th class="text-right p-2 border-b">Disc %</th>
+            <th class="text-right p-2 border-b">Tax %</th>
+            <th class="text-right p-2 border-b">Total ₹</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if items and items|length > 0 %}
+            {% for it in items %}
+              {% set qty = (it.qty or it.get('qty') or 0)|int %}
+              {% set unit = (it.unit_price or it.get('unit_price') or 0)|float %}
+              {% set disc = (it.discount_pct or it.get('discount_pct') or 0)|float %}
+              {% set tax  = (it.tax_pct or it.get('tax_pct') or 0)|float %}
+              {% set subtotal = unit * qty %}
+              {% set after_disc = subtotal * (1 - (disc/100)) %}
+              {% set line_total = after_disc * (1 + (tax/100)) %}
+              <tr class="border-b">
+                <td class="p-2">{{ loop.index }}</td>
+                <td class="p-2">{{ it.label or it.name or '-' }}</td>
+                <td class="p-2 text-right">{{ qty }}</td>
+                <td class="p-2 text-right">{{ "%.2f"|format(unit) }}</td>
+                <td class="p-2 text-right">{{ "%.1f"|format(disc) }}</td>
+                <td class="p-2 text-right">{{ "%.1f"|format(tax) }}</td>
+                <td class="p-2 text-right font-medium">₹{{ "%.2f"|format(line_total) }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td class="p-4 text-center text-gray-500" colspan="7">No items found.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 flex justify-end">
+      <div class="w-full sm:w-80">
+        <div class="flex justify-between py-2 border-b">
+          <span class="text-gray-600">Tax (approx)</span>
+          <span class="font-medium">₹{{ "%.2f"|format(tax_sum or 0) }}</span>
+        </div>
+        <div class="flex justify-between py-3">
+          <span class="font-semibold text-gray-800">Grand Total</span>
+          <span class="text-lg font-bold text-gray-900">₹{{ "%.2f"|format(total or 0) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-6 text-xs text-gray-500 text-center print:hidden">
+      (PDF stored silently for records. Printing won’t trigger download.)
+    </p>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .print\:hidden { display:none!important; }
+    body { background:#fff!important; }
+  }
+</style>
+
+{% endblock %}

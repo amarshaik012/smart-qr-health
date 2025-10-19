@@ -2,25 +2,137 @@
 {% block content %}
 <div class="relative">
 
-  <!-- 🧾 Dashboard Summary -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <!-- 🏥 Dashboard Summary -->
+  <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
+    <!-- Total Patients -->
     <div class="bg-gradient-to-r from-blue-100 to-blue-200 shadow rounded-xl p-5 text-center border border-blue-300">
       <p class="text-blue-800 font-medium text-sm">Total Patients</p>
       <h2 class="text-4xl font-extrabold text-blue-700 mt-1">{{ total_patients }}</h2>
     </div>
 
+    <!-- QR Codes -->
     <div class="bg-gradient-to-r from-green-100 to-green-200 shadow rounded-xl p-5 text-center border border-green-300">
       <p class="text-green-800 font-medium text-sm">QR Codes Generated</p>
       <h2 class="text-4xl font-extrabold text-green-700 mt-1">{{ total_patients }}</h2>
     </div>
 
+    <!-- New Registrations -->
     <div class="bg-gradient-to-r from-yellow-100 to-yellow-200 shadow rounded-xl p-5 text-center border border-yellow-300">
       <p class="text-yellow-800 font-medium text-sm">New Registrations (Today)</p>
       <h2 class="text-4xl font-extrabold text-yellow-700 mt-1">{{ recent_patients }}</h2>
     </div>
+
+    <!-- Total Doctors -->
+    <div class="bg-gradient-to-r from-purple-100 to-purple-200 shadow rounded-xl p-5 text-center border border-purple-300">
+      <p class="text-purple-800 font-medium text-sm">Total Doctors</p>
+      <h2 class="text-4xl font-extrabold text-purple-700 mt-1">{{ total_doctors }}</h2>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="bg-gradient-to-r from-gray-100 to-gray-200 shadow rounded-xl p-5 text-center border border-gray-300">
+      <p class="text-gray-700 font-medium text-sm">Total Revenue</p>
+      <h2 class="text-4xl font-extrabold text-gray-900 mt-1">₹{{ '%.2f'|format(total_revenue or 0) }}</h2>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="bg-gradient-to-r from-gray-100 to-gray-200 shadow rounded-xl p-5 text-center border border-gray-300">
+      <p class="text-gray-700 font-medium text-sm">Today's Revenue</p>
+      <h2 class="text-4xl font-extrabold text-gray-900 mt-1">₹{{ '%.2f'|format(todays_revenue or 0) }}</h2>
+    </div>
   </div>
 
-  <!-- 📅 Date-Wise Tables -->
+  <!-- 👩‍⚕️ Doctor & Payment Summary -->
+  <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+    <div class="bg-gradient-to-r from-green-100 to-green-200 shadow rounded-xl p-5 text-center border border-green-300">
+      <p class="text-green-800 font-medium text-sm">Approved Doctors</p>
+      <h2 class="text-3xl font-extrabold text-green-700 mt-1">{{ approved_doctors }}</h2>
+    </div>
+
+    <div class="bg-gradient-to-r from-yellow-100 to-yellow-200 shadow rounded-xl p-5 text-center border border-yellow-300">
+      <p class="text-yellow-800 font-medium text-sm">Pending Approvals</p>
+      <h2 class="text-3xl font-extrabold text-yellow-700 mt-1">{{ pending_doctors }}</h2>
+    </div>
+
+    <div class="bg-gradient-to-r from-red-100 to-red-200 shadow rounded-xl p-5 text-center border border-red-300">
+      <p class="text-red-800 font-medium text-sm">Rejected Doctors</p>
+      <h2 class="text-3xl font-extrabold text-red-700 mt-1">{{ rejected_doctors }}</h2>
+    </div>
+
+    <div class="bg-gradient-to-r from-indigo-100 to-indigo-200 shadow rounded-xl p-5 text-center border border-indigo-300">
+      <p class="text-indigo-800 font-medium text-sm">Manage Doctors</p>
+      <a href="/admin/manage-doctors"
+         class="inline-block mt-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow">
+        Go →
+      </a>
+    </div>
+
+    <!-- Pending & Average Payments -->
+    <div class="bg-gradient-to-r from-rose-100 to-rose-200 shadow rounded-xl p-5 text-center border border-rose-300">
+      <p class="text-rose-800 font-medium text-sm">Pending Payments</p>
+      <h2 class="text-3xl font-extrabold text-rose-700 mt-1">₹{{ '%.2f'|format(pending_payments or 0) }}</h2>
+    </div>
+    <div class="bg-gradient-to-r from-slate-100 to-slate-200 shadow rounded-xl p-5 text-center border border-slate-300">
+      <p class="text-slate-800 font-medium text-sm">Average Payment</p>
+      <h2 class="text-3xl font-extrabold text-slate-700 mt-1">₹{{ '%.2f'|format(avg_payment or 0) }}</h2>
+    </div>
+  </div>
+
+  <!-- 📊 Analytics Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+      <h3 class="text-xl font-semibold text-blue-700 mb-3">📈 Patient Visits - Last 7 Days</h3>
+      <script id="chart-data" type="application/json">
+        { "labels": {{ (chart_labels or []) | tojson | safe }}, "data": {{ (chart_values or []) | tojson | safe }} }
+      </script>
+      <canvas id="patientChart" height="90"></canvas>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+      <h3 class="text-xl font-semibold text-emerald-700 mb-3">💹 Revenue - Last 7 Days</h3>
+      <script id="revenue-data" type="application/json">
+        {{ (revenue_chart or {"labels":[],"values":[]}) | tojson | safe }}
+      </script>
+      <canvas id="revenueChart" height="90"></canvas>
+    </div>
+  </div>
+
+  <!-- 🧾 Pharmacy Sales Overview -->
+  <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-lg border border-orange-300 p-6 mb-10">
+    <h2 class="text-2xl font-bold text-orange-800 mb-4">🧾 Pharmacy Sales Overview</h2>
+
+    <div id="sales-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+      <div class="bg-white shadow rounded-lg p-4 border border-orange-200">
+        <p class="text-sm text-orange-700 font-medium">Today’s Sales</p>
+        <h3 class="text-2xl font-bold text-orange-800" id="todaySales">₹0</h3>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 border border-orange-200">
+        <p class="text-sm text-orange-700 font-medium">This Week</p>
+        <h3 class="text-2xl font-bold text-orange-800" id="weekSales">₹0</h3>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 border border-orange-200">
+        <p class="text-sm text-orange-700 font-medium">This Month</p>
+        <h3 class="text-2xl font-bold text-orange-800" id="monthSales">₹0</h3>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 border border-orange-200">
+        <p class="text-sm text-orange-700 font-medium">Total Sales</p>
+        <h3 class="text-2xl font-bold text-orange-800" id="totalSales">₹0</h3>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white rounded-xl border border-orange-200 shadow-md p-5">
+        <h3 class="text-lg font-semibold text-orange-700 mb-2">📆 Sales - Last 7 Days</h3>
+        <canvas id="salesChart" height="90"></canvas>
+      </div>
+
+      <div class="bg-white rounded-xl border border-orange-200 shadow-md p-5">
+        <h3 class="text-lg font-semibold text-orange-700 mb-2">💊 Top Medicines (Last 30 Days)</h3>
+        <canvas id="topMedsChart" height="90"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📅 Date-Wise Patient Tables -->
   {% for reg_date, day_patients in grouped_patients.items() %}
   <div class="mb-8 bg-white shadow-lg rounded-xl border border-gray-200">
     <div class="bg-green-50 border-b border-green-200 p-4 rounded-t-xl flex justify-between items-center">
@@ -42,6 +154,7 @@
             <th class="p-3">Name</th>
             <th class="p-3">Phone</th>
             <th class="p-3">Gender</th>
+            <th class="p-3">Doctor</th>
             <th class="p-3 text-center">QR</th>
             <th class="p-3 text-right">Actions</th>
           </tr>
@@ -61,8 +174,18 @@
                 -
               {% endif %}
             </td>
+
+            <td class="p-3">
+              {% if patient.assigned_doctor %}
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {{ patient.assigned_doctor }}
+                </span>
+              {% else %}
+                <span class="text-gray-400 text-xs italic">Unassigned</span>
+              {% endif %}
+            </td>
+
             <td class="p-3 text-center">
-              <!-- ✅ Fixed: use dynamic /qr/{uid} route -->
               {% if patient.patient_uid %}
                 <a href="/qr/{{ patient.patient_uid }}" target="_blank"
                    class="text-blue-600 hover:text-blue-800 underline text-sm">
@@ -72,6 +195,7 @@
                 <span class="text-gray-400 text-xs italic">No QR</span>
               {% endif %}
             </td>
+
             <td class="p-3 text-right">
               <a href="/admin/delete/{{ patient.id }}" onclick="return confirm('Delete this patient?')"
                  class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition text-xs font-medium">
@@ -85,6 +209,92 @@
     </div>
   </div>
   {% endfor %}
-
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Patients chart
+  const chartJSON = JSON.parse(document.getElementById("chart-data").textContent || '{"labels":[],"data":[]}');
+  new Chart(document.getElementById("patientChart").getContext("2d"), {
+    type: "line",
+    data: {
+      labels: chartJSON.labels,
+      datasets: [{
+        label: "Patients Registered",
+        data: chartJSON.data,
+        backgroundColor: "rgba(34,197,94,0.2)",
+        borderColor: "#16a34a",
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Revenue chart
+  const revJSON = JSON.parse(document.getElementById("revenue-data").textContent || '{"labels":[],"values":[]}');
+  new Chart(document.getElementById("revenueChart").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: revJSON.labels,
+      datasets: [{
+        label: "Revenue (₹)",
+        data: revJSON.values,
+        backgroundColor: "rgba(16,185,129,0.3)",
+        borderColor: "#059669",
+        borderWidth: 2
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // 🧾 Fetch and render pharmacy sales summary
+  fetch("/admin/api/sales-summary")
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("todaySales").textContent = "₹" + data.today_sales;
+      document.getElementById("weekSales").textContent = "₹" + data.week_sales;
+      document.getElementById("monthSales").textContent = "₹" + data.month_sales;
+      document.getElementById("totalSales").textContent = "₹" + data.total_sales;
+
+      new Chart(document.getElementById("salesChart").getContext("2d"), {
+        type: "line",
+        data: {
+          labels: data.chart.map(x => x.date),
+          datasets: [{
+            label: "Pharmacy Sales (₹)",
+            data: data.chart.map(x => x.total),
+            backgroundColor: "rgba(251,146,60,0.2)",
+            borderColor: "#ea580c",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    });
+
+  // 💊 Top medicines
+  fetch("/admin/api/top-medicines")
+    .then(r => r.json())
+    .then(rows => {
+      new Chart(document.getElementById("topMedsChart").getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: rows.map(x => x.name),
+          datasets: [{
+            label: "Units Sold",
+            data: rows.map(x => x.qty),
+            backgroundColor: "rgba(234,88,12,0.3)",
+            borderColor: "#c2410c",
+            borderWidth: 2
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    });
+</script>
 {% endblock %}

@@ -18,7 +18,8 @@ TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 STATIC_DATA_DIR = os.path.join(BASE_DIR, "static", "data")
 
 os.makedirs(STATIC_DATA_DIR, exist_ok=True)
-PRESCRIPTIONS_CSV = os.path.join(STATIC_DATA_DIR, "prescriptions.csv")
+PRESCRIPTIONS_CSV = "/tmp/prescriptions.csv"
+os.makedirs(os.path.dirname(PRESCRIPTIONS_CSV), exist_ok=True)
 open(PRESCRIPTIONS_CSV, "a").close()
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
